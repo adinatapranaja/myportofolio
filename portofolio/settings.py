@@ -35,7 +35,7 @@ ALLOWED_HOSTS = [
     host.strip()
     for host in os.getenv(
         'ALLOWED_HOSTS',
-        'localhost,127.0.0.1,adinata.alaudin51-myportofolio.cs.ui.ac.id',
+        'localhost,127.0.0.1,adinata-alaudin51-myportofolio.pws.cs.ui.ac.id',
     ).split(',')
     if host.strip()
 ]
