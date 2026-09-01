@@ -1,1 +1,1 @@
-"""Configuration package for the myportofolio Django project."""
+"""Configuration package for the portofolio Django project."""
