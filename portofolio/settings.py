@@ -31,8 +31,14 @@ SECRET_KEY = os.getenv(
 PRODUCTION = os.getenv('PRODUCTION', 'False').lower() == 'true'
 DEBUG = os.getenv('DEBUG', 'false' if PRODUCTION else 'true').lower() == 'true'
 
-ALLOWED_HOSTS = os.getenv('ALLOWED_HOSTS', 'localhost,127.0.0.1').split(',')
-
+ALLOWED_HOSTS = [
+    host.strip()
+    for host in os.getenv(
+        'ALLOWED_HOSTS',
+        'localhost,127.0.0.1,adinata.alaudin51-myportofolio.cs.ui.ac.id',
+    ).split(',')
+    if host.strip()
+]
 # Application definition
 
 INSTALLED_APPS = [
