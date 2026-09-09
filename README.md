@@ -54,6 +54,12 @@ Tutorial 1 melanjutkan proyek dengan mengganti package konfigurasi menjadi `port
 
 Sumber: [Tutorial 1 PBP](https://pbp.cs.ui.ac.id/tutorial/tutorial-1.html).
 
+### Tutorial 2 — Implementasi Model-View-Template (MVT)
+
+Tutorial 2 mengubah portfolio statis menjadi aplikasi Django dengan pola Model-View-Template. Aplikasi `main` menyimpan model `Experience`; view mengambil data dan mengirimkannya melalui context; lalu template menampilkan profil pada `/` dan daftar pengalaman dinamis pada `/experience/`. Tutorial ini juga menambahkan migration, URL namespace, navigasi dengan tag `{% url %}`, serta enam unit test untuk model dan halaman aplikasi.
+
+Sumber: [Tutorial 2 PBP](https://pbp.cs.ui.ac.id/tutorial/tutorial-2.html).
+
 ## Struktur dan penjelasan file
 
 ```text
@@ -61,14 +67,20 @@ myportofolio/
 ├── manage.py
 ├── requirements.txt
 ├── templates/
-│   └── index.html
+│   ├── index.html
+│   └── experience.html
 ├── static/
 │   ├── css/style.css
 │   └── img/adinata.jpg
+├── main/
+│   ├── migrations/0001_initial.py
+│   ├── models.py
+│   ├── tests.py
+│   ├── urls.py
+│   └── views.py
 └── portofolio/
     ├── settings.py
     ├── urls.py
-    ├── views.py
     ├── wsgi.py
     └── asgi.py
 ```
@@ -77,10 +89,15 @@ myportofolio/
 | --- | --- |
 | `manage.py` | Entry point command Django, misalnya `migrate`, `check`, dan `runserver`. |
 | `portofolio/settings.py` | Konfigurasi aplikasi: environment variables, database SQLite/PostgreSQL, template, static files, WhiteNoise, dan `ALLOWED_HOSTS`. |
-| `portofolio/urls.py` | Mendefinisikan URL `/` untuk landing page dan `/admin/` untuk admin Django. |
-| `portofolio/views.py` | Berisi `landing_page`, view yang merender `index.html`. |
-| `templates/index.html` | Struktur HTML halaman portofolio: header, profil, informasi akademik, tautan sosial, dan footer. |
-| `static/css/style.css` | Tampilan halaman: palet warna, grid profil, tombol sosial, serta layout responsif untuk layar kecil. |
+| `portofolio/urls.py` | Menghubungkan URL project ke `main.urls` dan menyediakan route `/admin/`. |
+| `main/models.py` | Mendefinisikan model database `Experience`, kategori pengalaman, dan properti `is_ongoing`. |
+| `main/views.py` | Berisi `show_main` untuk halaman profil dan `show_experience` untuk halaman pengalaman. |
+| `main/urls.py` | Mendefinisikan route bernama `main:show_main` (`/`) dan `main:show_experience` (`/experience/`). |
+| `main/migrations/0001_initial.py` | Migration awal yang membuat tabel database untuk model `Experience`. |
+| `main/tests.py` | Enam unit test untuk route, model, halaman pengalaman, empty state, dan status selesai. |
+| `templates/index.html` | Struktur HTML halaman profil yang menerima data profil dari context view. |
+| `templates/experience.html` | Menampilkan daftar objek `Experience` secara dinamis menggunakan Django Template Language. |
+| `static/css/style.css` | Tampilan halaman: palet warna, grid profil, kartu experience, status, empty state, dan layout responsif. |
 | `static/img/adinata.jpg` | Foto profil yang ditampilkan pada landing page. |
 | `portofolio/wsgi.py` | Entry point aplikasi untuk server WSGI seperti Gunicorn. |
 | `portofolio/asgi.py` | Entry point aplikasi untuk server ASGI. |
@@ -89,10 +106,11 @@ myportofolio/
 
 ## Pemeriksaan cepat
 
-Jalankan pemeriksaan konfigurasi Django sebelum commit atau deployment:
+Jalankan pemeriksaan konfigurasi dan seluruh unit test sebelum commit atau deployment:
 
 ```bash
 python manage.py check
+python manage.py test main
 ```
 
 ## Refleksi
