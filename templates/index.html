@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Adinata - Portfolio</title>
+    <title>{{ name }} - Portfolio</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet">
@@ -12,7 +12,7 @@
 <body>
     <header class="site-header">
         <div class="container">
-            <a href="#profile" class="brand">Adinata</a>
+            <a href="#profile" class="brand">{{ short_name }}</a>
             <nav>
                 <a href="#profile">Profile</a>
                 <a href="#skills">Skills</a>
@@ -26,22 +26,22 @@
             <div class="container hero-grid">
                 <div class="hero-identity">
                     <p class="hero-kicker">Information Systems &middot; Universitas Indonesia</p>
-                    <h1>Adinata Alaudin Pranaja</h1>
+                    <h1>{{ name }}</h1>
                 </div>
                 <div class="hero-photo">
                     <div class="photo-block"></div>
-                    <img class="avatar" src="/static/img/adinata.jpg" alt="Photo of Adinata">
+                    <img class="avatar" src="/static/img/adinata.jpg" alt="Photo of {{ name }}">
                 </div>
                 <div class="hero-details">
-                    <p class="bio">Full Stack Developer | Purwadhika Graduate | University of Indonesia Information System Student</p>
+                    <p class="bio">{{ bio }}</p>
                     <dl class="meta-list">
                         <div class="meta-row">
                             <dt>NPM</dt>
-                            <dd>2506656356</dd>
+                            <dd>{{ npm }}</dd>
                         </div>
                         <div class="meta-row">
                             <dt>Program</dt>
-                            <dd>S1 Sistem Informasi</dd>
+                            <dd>{{ study_program }}</dd>
                         </div>
                     </dl>
                     <div class="social-links">
@@ -74,34 +74,11 @@
             </div>
         </section>
 
-        <section class="experience" id="experience" aria-labelledby="experience-title">
-            <div class="container">
-                <p class="section-kicker">My journey</p>
-                <h2 id="experience-title">Experience</h2>
-                <div class="experience-list">
-                    <article class="experience-item">
-                        <p class="experience-label">September 2025 - Present · Jakarta</p>
-                        <h3>Founder &amp; CTO — PandaTech</h3>
-                        <p>Memimpin visi teknologi, arsitektur, dan pengembangan produk end-to-end untuk solusi web, automation berbasis AI, serta UI/UX yang berorientasi pengguna.</p>
-                    </article>
-                    <article class="experience-item">
-                        <p class="experience-label">June 2025 - Present · Personal Project</p>
-                        <h3>Full Stack Developer — Capstone Project</h3>
-                        <p>Mengembangkan platform manajemen event dengan QR aman, tracking kehadiran real-time, Camera API, Firebase, dan dashboard analitik responsif.</p>
-                    </article>
-                    <article class="experience-item">
-                        <p class="experience-label">August 2025 - January 2026 · Jakarta</p>
-                        <h3>Full Stack Developer — Kementerian Sekretariat Negara RI</h3>
-                        <p>Membangun sistem informasi manajemen personel yang aman dengan PHP, MySQL, REST API, RBAC, document management, dan dashboard admin.</p>
-                    </article>
-                </div>
-            </div>
-        </section>
     </main>
 
     <footer class="site-footer">
         <div class="container">
-            <p>&copy; 2026 Adinata Alaudin Pranaja. Fakultas Ilmu Komputer, Universitas Indonesia.</p>
+            <p>&copy; 2026 {{ name }}. Fakultas Ilmu Komputer, Universitas Indonesia.</p>
         </div>
     </footer>
 </body>
