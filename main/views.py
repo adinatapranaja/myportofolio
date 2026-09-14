@@ -11,7 +11,7 @@ def show_main(request):
         'study_program': 'S1 Sistem Informasi',
         'bio': (
             'Full Stack Developer | Purwadhika Graduate | '
-            'University of Indonesia Information System Student'
+            'University of Indonesia Information Systems Student'
         ),
     }
     return render(request, 'index.html', context)
