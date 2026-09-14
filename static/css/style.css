@@ -301,6 +301,69 @@ h1, .brand {
     border-radius: var(--radius);
 }
 
+.projects {
+    padding: 5rem 0;
+    border-top: 1px solid var(--line);
+}
+
+.projects h1 {
+    margin-bottom: 2rem;
+    font-family: "Space Grotesk", -apple-system, sans-serif;
+    font-size: clamp(2rem, 4vw, 3rem);
+}
+
+.projects-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    gap: 1rem;
+}
+
+.project-card {
+    display: flex;
+    flex-direction: column;
+    min-height: 250px;
+    padding: 1.5rem;
+    background-color: #fff;
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+}
+
+.project-card h2 {
+    margin-bottom: 0.75rem;
+    font-family: "Space Grotesk", -apple-system, sans-serif;
+    font-size: 1.35rem;
+}
+
+.project-description {
+    color: var(--text-muted);
+}
+
+.project-technologies {
+    margin-top: 1rem;
+    color: var(--accent-dark);
+    font-size: 0.85rem;
+    font-weight: 700;
+}
+
+.project-links {
+    display: flex;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+    margin-top: auto;
+    padding-top: 1.25rem;
+}
+
+.project-links a {
+    color: var(--ink);
+    font-size: 0.9rem;
+    font-weight: 700;
+    text-underline-offset: 0.2rem;
+}
+
+.project-links a:hover {
+    color: var(--accent-dark);
+}
+
 .site-footer {
     padding: 1.5rem;
     color: var(--text-muted);
@@ -330,6 +393,10 @@ h1, .brand {
     }
 
     .experience {
+        padding: 3.5rem 0;
+    }
+
+    .projects {
         padding: 3.5rem 0;
     }
 
