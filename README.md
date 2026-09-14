@@ -60,6 +60,28 @@ Tutorial 2 mengubah portfolio statis menjadi aplikasi Django dengan pola Model-V
 
 Sumber: [Tutorial 2 PBP](https://pbp.cs.ui.ac.id/tutorial/tutorial-2.html).
 
+## Fitur Tugas 2 — Projects
+
+Tugas 2 menambahkan halaman **Projects** pada URL `/projects/`. Halaman ini mengambil seluruh data dari model `Project` dan menampilkannya secara dinamis menggunakan perulangan Django Template Language. Setiap proyek dapat memiliki judul, deskripsi, teknologi yang digunakan, tautan live project, dan tautan repository. Jika belum ada data, halaman menampilkan pesan empty state.
+
+Untuk menambahkan data proyek lokal melalui Django shell:
+
+```bash
+python manage.py shell
+```
+
+```python
+from main.models import Project
+
+Project.objects.create(
+    title="Sistem Kehadiran Event",
+    description="Platform kehadiran event dengan QR aman dan dashboard.",
+    technologies="Django, Firebase, JavaScript",
+    project_url="https://example.com/project",
+    repository_url="https://github.com/username/repository",
+)
+```
+
 ## Struktur dan penjelasan file
 
 ```text
@@ -68,12 +90,14 @@ myportofolio/
 ├── requirements.txt
 ├── templates/
 │   ├── index.html
-│   └── experience.html
+│   ├── experience.html
+│   └── projects.html
 ├── static/
 │   ├── css/style.css
 │   └── img/adinata.jpg
 ├── main/
 │   ├── migrations/0001_initial.py
+│   ├── migrations/0002_project.py
 │   ├── models.py
 │   ├── tests.py
 │   ├── urls.py
@@ -90,14 +114,16 @@ myportofolio/
 | `manage.py` | Entry point command Django, misalnya `migrate`, `check`, dan `runserver`. |
 | `portofolio/settings.py` | Konfigurasi aplikasi: environment variables, database SQLite/PostgreSQL, template, static files, WhiteNoise, dan `ALLOWED_HOSTS`. |
 | `portofolio/urls.py` | Menghubungkan URL project ke `main.urls` dan menyediakan route `/admin/`. |
-| `main/models.py` | Mendefinisikan model database `Experience`, kategori pengalaman, dan properti `is_ongoing`. |
-| `main/views.py` | Berisi `show_main` untuk halaman profil dan `show_experience` untuk halaman pengalaman. |
-| `main/urls.py` | Mendefinisikan route bernama `main:show_main` (`/`) dan `main:show_experience` (`/experience/`). |
+| `main/models.py` | Mendefinisikan model `Experience` dan `Project` sebagai data portfolio dinamis. |
+| `main/views.py` | Berisi view halaman profil, experience, dan projects. |
+| `main/urls.py` | Mendefinisikan named route untuk `/`, `/experience/`, dan `/projects/`. |
 | `main/migrations/0001_initial.py` | Migration awal yang membuat tabel database untuk model `Experience`. |
-| `main/tests.py` | Enam unit test untuk route, model, halaman pengalaman, empty state, dan status selesai. |
+| `main/migrations/0002_project.py` | Migration yang membuat tabel database untuk model `Project`. |
+| `main/tests.py` | Sembilan unit test untuk route, model, tampilan data, dan empty state pada Experience serta Projects. |
 | `templates/index.html` | Struktur HTML halaman profil yang menerima data profil dari context view. |
 | `templates/experience.html` | Menampilkan daftar objek `Experience` secara dinamis menggunakan Django Template Language. |
-| `static/css/style.css` | Tampilan halaman: palet warna, grid profil, kartu experience, status, empty state, dan layout responsif. |
+| `templates/projects.html` | Menampilkan daftar objek `Project` secara dinamis menggunakan Django Template Language. |
+| `static/css/style.css` | Tampilan halaman: palet warna, grid profil, kartu experience/projects, status, empty state, dan layout responsif. |
 | `static/img/adinata.jpg` | Foto profil yang ditampilkan pada landing page. |
 | `portofolio/wsgi.py` | Entry point aplikasi untuk server WSGI seperti Gunicorn. |
 | `portofolio/asgi.py` | Entry point aplikasi untuk server ASGI. |
@@ -110,7 +136,7 @@ Jalankan pemeriksaan konfigurasi dan seluruh unit test sebelum commit atau deplo
 
 ```bash
 python manage.py check
-python manage.py test main
+python manage.py test
 ```
 
 ## Refleksi
@@ -123,6 +149,13 @@ python manage.py test main
 
 3. Keterbatasan website statis ini adalah seluruh isi portfolio masih ditulis langsung atau di hardcode di file HTML. Saat ingin memperbarui skill atau pengalaman, saya harus mengubah kode dan melakukan deployment ulang, pengguna juga belum dapat mengirim data atau berinteraksi dengan sistem. Fitur dinamis yang ingin saya tambahkan berikutnya adalah model Django dan Django Admin untuk mengelola data project, skill, dan pengalaman tanpa mengedit HTML, serta form kontak yang dapat menyimpan atau mengirim pesan dari pengunjung.
 
+### Tugas 2
+
+1. Ketika pengguna membuka halaman `/projects/`, browser mengirimkan request ke Django. Berkas `portofolio/urls.py` meneruskan request tersebut ke `main/urls.py` melalui `include("main.urls")`. Selanjutnya, route bernama `main:show_projects` memetakan path `projects/` ke view `show_projects`. View mengambil seluruh objek dari model `Project` dengan `Project.objects.all()`, memasukkannya ke dalam context sebagai `project_list`, lalu merender `projects.html`. Template melakukan perulangan terhadap `project_list` dan Django mengembalikan HTML hasil render sebagai response ke browser.
+
+2. Data Projects lebih baik disimpan di model karena data tidak bercampur dengan struktur tampilan HTML. Saya dapat menambah, mengubah, atau menghapus proyek melalui database tanpa menyalin dan mengubah kartu HTML satu per satu. Pemisahan ini juga membuat halaman dapat memperbarui jumlah kartu secara otomatis, lebih mudah diuji, dan dapat dikembangkan ke fitur berikutnya seperti Django Admin, form tambah proyek, atau halaman detail.
+
+3. `makemigrations` membuat berkas migration yang mencatat perubahan pada definisi model, sedangkan `migrate` menerapkan perubahan yang sudah tercatat tersebut ke struktur database. Contohnya, ketika saya menambahkan model `Project` dengan field `title`, `description`, dan `technologies`, saya menjalankan `python manage.py makemigrations` untuk membuat migration `0002_project.py`, kemudian `python manage.py migrate` untuk membuat tabel `Project` di database.
 
 ### AI Disclosure
-Dalam pengerjaan project ini, saya menggunakan bantuan AI secara terbatas, yaitu untuk membantu merapikan format penulisan pada file README.md agar lebih terstruktur dan mudah dibaca, serta untuk mencari referensi dan tutorial dalam mengembangkan desain web yang saya buat. Seluruh proses pengembangan, logika, dan implementasi tetap saya kerjakan dan pahami sendiri.
+Dalam pengerjaan project ini, saya menggunakan bantuan AI assistant (OpenAI Codex) untuk menganalisis instruksi PBP, menyusun pembagian commit, dan membantu membuat serta memeriksa implementasi Django. Bantuan tersebut mencakup model dan migration `Project`, view, template dengan Django Template Language, routing, CSS, unit test, serta perapian README dan jawaban reflektif. Saya juga menggunakan AI untuk memeriksa hasil `manage.py check` dan test ketika terjadi error. Prompt yang digunakan berfokus pada analisis requirement tugas, implementasi bertahap per commit, serta verifikasi bahwa setiap requirement MVT terpenuhi.
