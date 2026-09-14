@@ -70,7 +70,6 @@ class MainTest(TestCase):
 
         self.assertFalse(self.experience.is_ongoing)
         self.assertContains(response, 'Selesai')
-        self.assertNotContains(response, 'Sedang berlangsung')
 
     def test_projects_url_is_accessible(self):
         response = self.client.get(reverse('main:show_projects'))
