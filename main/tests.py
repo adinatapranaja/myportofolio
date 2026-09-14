@@ -3,7 +3,7 @@ from django.test import override_settings
 from django.urls import reverse
 from django.utils import timezone
 
-from main.models import Experience
+from main.models import Experience, Project
 
 
 @override_settings(ALLOWED_HOSTS=['testserver'])
@@ -13,6 +13,13 @@ class MainTest(TestCase):
             title='Asisten Dosen PBP',
             description='Membangun aplikasi web yang aman dan responsif.',
             category='part-time',
+        )
+        self.project = Project.objects.create(
+            title='Sistem Kehadiran Event',
+            description='Platform kehadiran event dengan QR aman dan dashboard.',
+            technologies='Django, Firebase, JavaScript',
+            project_url='https://example.com/project',
+            repository_url='https://github.com/adinatapranaja/project',
         )
 
     def test_main_url_is_accessible(self):
@@ -64,3 +71,24 @@ class MainTest(TestCase):
         self.assertFalse(self.experience.is_ongoing)
         self.assertContains(response, 'Selesai')
         self.assertNotContains(response, 'Sedang berlangsung')
+
+    def test_projects_url_is_accessible(self):
+        response = self.client.get(reverse('main:show_projects'))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, 'projects.html')
+
+    def test_projects_page_displays_data(self):
+        response = self.client.get(reverse('main:show_projects'))
+
+        self.assertContains(response, self.project.title)
+        self.assertContains(response, self.project.description)
+        self.assertContains(response, self.project.technologies)
+        self.assertContains(response, self.project.project_url)
+        self.assertContains(response, self.project.repository_url)
+
+    def test_empty_projects_page(self):
+        Project.objects.all().delete()
+        response = self.client.get(reverse('main:show_projects'))
+
+        self.assertContains(response, 'Belum ada proyek yang ditambahkan.')
