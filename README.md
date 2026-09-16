@@ -60,6 +60,12 @@ Tutorial 2 mengubah portfolio statis menjadi aplikasi Django dengan pola Model-V
 
 Sumber: [Tutorial 2 PBP](https://pbp.cs.ui.ac.id/tutorial/tutorial-2.html).
 
+### Tutorial 3 — Form dan Data Delivery
+
+Tutorial 3 menambahkan `base.html` sebagai skeleton agar navbar dan footer digunakan ulang oleh seluruh halaman. Data Project kini dapat ditambahkan melalui form di `/projects/add/` yang memakai `ModelForm` dan CSRF token. Aplikasi juga menyediakan endpoint JSON di `/api/projects/`, termasuk filter judul melalui query `?title=`, lalu halaman `/projects/` menampilkan hasilnya. Terakhir, halaman Project mendapat fitur pencarian serta dialog konfirmasi untuk menghapus data dengan request POST yang terlindungi CSRF.
+
+Sumber: [Tutorial 3 PBP](https://pbp.cs.ui.ac.id/tutorial/tutorial-3.html).
+
 ## Struktur dan penjelasan file
 
 ```text
@@ -67,6 +73,9 @@ myportofolio/
 ├── manage.py
 ├── requirements.txt
 ├── templates/
+│   ├── components/project_delete_modal.html
+│   ├── base.html
+│   ├── create_project.html
 │   ├── index.html
 │   └── experience.html
 ├── static/
@@ -74,6 +83,8 @@ myportofolio/
 │   └── img/adinata.jpg
 ├── main/
 │   ├── migrations/0001_initial.py
+│   ├── migrations/0002_project.py
+│   ├── forms.py
 │   ├── models.py
 │   ├── tests.py
 │   ├── urls.py
@@ -88,16 +99,21 @@ myportofolio/
 | File/folder | Penjelasan singkat |
 | --- | --- |
 | `manage.py` | Entry point command Django, misalnya `migrate`, `check`, dan `runserver`. |
-| `portofolio/settings.py` | Konfigurasi aplikasi: environment variables, database SQLite/PostgreSQL, template, static files, WhiteNoise, dan `ALLOWED_HOSTS`. |
+| `portofolio/settings.py` | Konfigurasi aplikasi: environment variables, database SQLite/PostgreSQL, template, static files, WhiteNoise, `ALLOWED_HOSTS`, dan `CSRF_TRUSTED_ORIGINS` untuk PWS. |
 | `portofolio/urls.py` | Menghubungkan URL project ke `main.urls` dan menyediakan route `/admin/`. |
-| `main/models.py` | Mendefinisikan model database `Experience`, kategori pengalaman, dan properti `is_ongoing`. |
-| `main/views.py` | Berisi `show_main` untuk halaman profil dan `show_experience` untuk halaman pengalaman. |
-| `main/urls.py` | Mendefinisikan route bernama `main:show_main` (`/`) dan `main:show_experience` (`/experience/`). |
-| `main/migrations/0001_initial.py` | Migration awal yang membuat tabel database untuk model `Experience`. |
-| `main/tests.py` | Enam unit test untuk route, model, halaman pengalaman, empty state, dan status selesai. |
+| `main/models.py` | Mendefinisikan model database `Experience` dan `Project`. |
+| `main/forms.py` | `ProjectForm` berbasis `ModelForm` untuk memvalidasi serta menyimpan Project dari halaman form. |
+| `main/views.py` | View halaman profil, pengalaman, dan Project, beserta view form tambah, JSON API, dan hapus Project. |
+| `main/urls.py` | Mendefinisikan route halaman, `/projects/add/`, `/api/projects/`, serta route hapus Project. |
+| `main/migrations/` | Riwayat perubahan struktur database untuk model `Experience` dan `Project`, termasuk data seed portfolio. |
+| `main/tests.py` | Unit test untuk route, model, form tambah, JSON API/filter, serta hapus Project. |
+| `templates/base.html` | Skeleton bersama yang memuat metadata, navbar, footer, dan blok konten halaman. |
 | `templates/index.html` | Struktur HTML halaman profil yang menerima data profil dari context view. |
 | `templates/experience.html` | Menampilkan daftar objek `Experience` secara dinamis menggunakan Django Template Language. |
-| `static/css/style.css` | Tampilan halaman: palet warna, grid profil, kartu experience, status, empty state, dan layout responsif. |
+| `templates/projects.html` | Menampilkan Project, form pencarian berdasarkan judul, dan kontrol tambah/hapus Project. |
+| `templates/create_project.html` | Halaman form untuk menambahkan Project baru. |
+| `templates/components/project_delete_modal.html` | Komponen dialog konfirmasi sebelum sebuah Project dihapus. |
+| `static/css/style.css` | Tampilan halaman, form Project, pencarian, dialog hapus, serta layout responsif. |
 | `static/img/adinata.jpg` | Foto profil yang ditampilkan pada landing page. |
 | `portofolio/wsgi.py` | Entry point aplikasi untuk server WSGI seperti Gunicorn. |
 | `portofolio/asgi.py` | Entry point aplikasi untuk server ASGI. |
