@@ -113,3 +113,29 @@ class MainTest(TestCase):
 
         self.assertRedirects(response, reverse('main:show_projects'))
         self.assertTrue(Project.objects.filter(title='Project Baru').exists())
+
+    def test_projects_json_returns_serialized_projects(self):
+        response = self.client.get(reverse('main:get_projects_json'))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response['Content-Type'], 'application/json')
+        payload = json.loads(response.content)
+        titles = [project['fields']['title'] for project in payload]
+        self.assertIn(self.project.title, titles)
+
+    def test_projects_json_filters_by_title(self):
+        Project.objects.create(
+            title='Portfolio Lain',
+            description='Project kedua.',
+            technologies='Python',
+        )
+
+        response = self.client.get(
+            reverse('main:get_projects_json'),
+            {'title': 'Kehadiran'},
+        )
+
+        payload = json.loads(response.content)
+        self.assertEqual(len(payload), 1)
+        self.assertEqual(payload[0]['fields']['title'], self.project.title)
+import json
