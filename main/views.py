@@ -1,5 +1,6 @@
-from django.shortcuts import render
+from django.shortcuts import redirect, render
 
+from main.forms import ProjectForm
 from main.models import Experience, Project
 
 
@@ -33,3 +34,19 @@ def show_projects(request):
         'project_list': Project.objects.all(),
     }
     return render(request, 'projects.html', context)
+
+
+def create_project(request):
+    if request.method == 'POST':
+        form = ProjectForm(request.POST)
+        if form.is_valid():
+            form.save()
+            return redirect('main:show_projects')
+    else:
+        form = ProjectForm()
+
+    context = {
+        'name': 'Adinata Alaudin Pranaja',
+        'form': form,
+    }
+    return render(request, 'create_project.html', context)

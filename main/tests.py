@@ -91,3 +91,25 @@ class MainTest(TestCase):
         response = self.client.get(reverse('main:show_projects'))
 
         self.assertContains(response, 'Belum ada proyek yang ditambahkan.')
+
+    def test_create_project_page_is_accessible(self):
+        response = self.client.get(reverse('main:create_project'))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, 'create_project.html')
+        self.assertContains(response, 'csrfmiddlewaretoken')
+
+    def test_create_project_saves_valid_data(self):
+        response = self.client.post(
+            reverse('main:create_project'),
+            {
+                'title': 'Project Baru',
+                'description': 'Deskripsi project baru.',
+                'technologies': 'Django, Python',
+                'project_url': '',
+                'repository_url': '',
+            },
+        )
+
+        self.assertRedirects(response, reverse('main:show_projects'))
+        self.assertTrue(Project.objects.filter(title='Project Baru').exists())

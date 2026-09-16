@@ -10,6 +10,7 @@
             <div class="container">
                 <p class="section-kicker">What I have built</p>
                 <h1 id="projects-title">Projects</h1>
+                <a class="button add-project-button" href="{% url 'main:create_project' %}">Add project</a>
                 <div class="projects-grid">
                     {% for project in project_list %}
                         <article class="project-card">
