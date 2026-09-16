@@ -138,4 +138,29 @@ class MainTest(TestCase):
         payload = json.loads(response.content)
         self.assertEqual(len(payload), 1)
         self.assertEqual(payload[0]['fields']['title'], self.project.title)
+
+    def test_projects_page_filters_by_title(self):
+        response = self.client.get(
+            reverse('main:show_projects'),
+            {'title': 'Kehadiran'},
+        )
+
+        self.assertContains(response, self.project.title)
+        self.assertNotContains(response, 'Secure Event Attendance Platform')
+
+    def test_delete_project_requires_post(self):
+        response = self.client.get(
+            reverse('main:delete_project', args=[self.project.id]),
+        )
+
+        self.assertRedirects(response, reverse('main:show_projects'))
+        self.assertTrue(Project.objects.filter(id=self.project.id).exists())
+
+    def test_delete_project_removes_project(self):
+        response = self.client.post(
+            reverse('main:delete_project', args=[self.project.id]),
+        )
+
+        self.assertRedirects(response, reverse('main:show_projects'))
+        self.assertFalse(Project.objects.filter(id=self.project.id).exists())
 import json

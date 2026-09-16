@@ -9,8 +9,21 @@
         <section class="projects" id="projects" aria-labelledby="projects-title">
             <div class="container">
                 <p class="section-kicker">What I have built</p>
-                <h1 id="projects-title">Projects</h1>
-                <a class="button add-project-button" href="{% url 'main:create_project' %}">Add project</a>
+                <div class="project-header">
+                    <h1 id="projects-title">Projects</h1>
+                    <a class="button" href="{% url 'main:create_project' %}">Add project</a>
+                </div>
+                <form method="get" action="{% url 'main:show_projects' %}" class="project-search">
+                    <label class="visually-hidden" for="project-title-search">Search projects by title</label>
+                    <input
+                        id="project-title-search"
+                        type="search"
+                        name="title"
+                        value="{{ title_query }}"
+                        placeholder="Search projects by title"
+                    >
+                    <button class="button" type="submit">Search</button>
+                </form>
                 <div class="projects-grid">
                     {% for project in project_list %}
                         <article class="project-card">
@@ -24,10 +37,15 @@
                                 {% if project.repository_url %}
                                     <a href="{{ project.repository_url }}">Repository</a>
                                 {% endif %}
+                                {% include "components/project_delete_modal.html" with project=project %}
                             </div>
                         </article>
                     {% empty %}
-                        <p class="empty-state">Belum ada proyek yang ditambahkan.</p>
+                        {% if title_query %}
+                            <p class="empty-state">No projects match that title.</p>
+                        {% else %}
+                            <p class="empty-state">Belum ada proyek yang ditambahkan.</p>
+                        {% endif %}
                     {% endfor %}
                 </div>
             </div>

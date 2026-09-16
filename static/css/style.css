@@ -83,8 +83,23 @@ h1, .brand {
     background: transparent;
 }
 
-.add-project-button {
-    margin: -1rem 0 2rem;
+.button-danger {
+    background: #a32121;
+    border-color: #a32121;
+}
+
+.button-small {
+    padding: 0.35rem 0.65rem;
+    font-size: 0.8rem;
+}
+
+.visually-hidden {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
 }
 
 .project-form-section {
@@ -141,6 +156,79 @@ h1, .brand {
     display: flex;
     justify-content: flex-end;
     gap: 0.75rem;
+}
+
+.project-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+}
+
+.project-header h1 {
+    margin-bottom: 0;
+}
+
+.project-search {
+    display: flex;
+    gap: 0.75rem;
+    margin-bottom: 1.5rem;
+}
+
+.project-search input {
+    width: 100%;
+    min-width: 0;
+    padding: 0.7rem;
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    background: #fff;
+    color: var(--ink);
+    font: inherit;
+}
+
+.project-delete-modal {
+    width: min(100% - 2rem, 480px);
+    padding: 0;
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    background: var(--paper);
+    box-shadow: 0 1rem 3rem rgb(28 25 23 / 22%);
+}
+
+.project-delete-modal::backdrop {
+    background: rgb(28 25 23 / 58%);
+}
+
+.project-delete-modal__content {
+    position: relative;
+    padding: 1.5rem;
+}
+
+.project-delete-modal__content h2 {
+    margin-bottom: 0.75rem;
+}
+
+.project-delete-modal__backdrop {
+    display: none;
+}
+
+.project-delete-modal__close {
+    position: absolute;
+    top: 0.6rem;
+    right: 0.75rem;
+    border: 0;
+    background: transparent;
+    color: var(--text-muted);
+    font-size: 1.8rem;
+    cursor: pointer;
+}
+
+.project-delete-modal__actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.75rem;
+    margin-top: 1.5rem;
 }
 
 .hero {
@@ -489,5 +577,20 @@ h1, .brand {
 
     .skill-card {
         min-height: 0;
+    }
+
+    .project-header,
+    .project-search,
+    .project-delete-modal__actions {
+        align-items: stretch;
+        flex-direction: column;
+    }
+
+    .project-header .button,
+    .project-search .button,
+    .project-delete-modal__actions .button,
+    .project-delete-modal__actions form {
+        width: 100%;
+        text-align: center;
     }
 }

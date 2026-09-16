@@ -1,6 +1,6 @@
 from django.core import serializers
 from django.http import HttpResponse
-from django.shortcuts import redirect, render
+from django.shortcuts import get_object_or_404, redirect, render
 
 from main.forms import ProjectForm
 from main.models import Experience, Project
@@ -70,3 +70,12 @@ def get_projects_json(request):
 
     projects_json = serializers.serialize('json', projects)
     return HttpResponse(projects_json, content_type='application/json')
+
+
+def delete_project(request, project_id):
+    project = get_object_or_404(Project, pk=project_id)
+
+    if request.method == 'POST':
+        project.delete()
+
+    return redirect('main:show_projects')
