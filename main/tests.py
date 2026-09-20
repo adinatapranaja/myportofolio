@@ -1,3 +1,5 @@
+import json
+
 from django.test import TestCase
 from django.test import override_settings
 from django.urls import reverse
@@ -114,6 +116,29 @@ class MainTest(TestCase):
         self.assertRedirects(response, reverse('main:show_projects'))
         self.assertTrue(Project.objects.filter(title='Project Baru').exists())
 
+    def test_create_experience_page_is_accessible(self):
+        response = self.client.get(reverse('main:create_experience'))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, 'create_experience.html')
+        self.assertContains(response, 'csrfmiddlewaretoken')
+
+    def test_create_experience_saves_valid_data(self):
+        response = self.client.post(
+            reverse('main:create_experience'),
+            {
+                'title': 'Backend Developer Intern',
+                'description': 'Membangun layanan backend untuk aplikasi internal.',
+                'category': 'internship',
+                'thumbnail': 'https://example.com/experience.jpg',
+            },
+        )
+
+        self.assertRedirects(response, reverse('main:show_experience'))
+        self.assertTrue(
+            Experience.objects.filter(title='Backend Developer Intern').exists()
+        )
+
     def test_projects_json_returns_serialized_projects(self):
         response = self.client.get(reverse('main:get_projects_json'))
 
@@ -163,4 +188,3 @@ class MainTest(TestCase):
 
         self.assertRedirects(response, reverse('main:show_projects'))
         self.assertFalse(Project.objects.filter(id=self.project.id).exists())
-import json

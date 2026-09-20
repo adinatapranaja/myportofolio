@@ -9,7 +9,10 @@
         <section class="experience" id="experience" aria-labelledby="experience-title">
             <div class="container">
                 <p class="section-kicker">My journey</p>
-                <h1 id="experience-title">Experience</h1>
+                <div class="experience-header">
+                    <h1 id="experience-title">Experience</h1>
+                    <a class="button" href="{% url 'main:create_experience' %}">Add experience</a>
+                </div>
                 <div class="experience-list">
                     {% for experience in experience_list %}
                         <article class="experience-item">

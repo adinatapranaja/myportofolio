@@ -1,6 +1,6 @@
 from django import forms
 
-from main.models import Project
+from main.models import Experience, Project
 
 
 class ProjectForm(forms.ModelForm):
@@ -28,5 +28,30 @@ class ProjectForm(forms.ModelForm):
             ),
             'repository_url': forms.URLInput(
                 attrs={'placeholder': 'https://github.com/... (opsional)'}
+            ),
+        }
+
+
+class ExperienceForm(forms.ModelForm):
+    """Form untuk menambahkan atau memperbarui pengalaman."""
+
+    class Meta:
+        model = Experience
+        fields = ['title', 'description', 'category', 'thumbnail']
+        labels = {
+            'title': 'Role atau posisi',
+            'description': 'Deskripsi',
+            'category': 'Kategori',
+            'thumbnail': 'URL gambar (opsional)',
+        }
+        widgets = {
+            'title': forms.TextInput(
+                attrs={'placeholder': 'Contoh: Software Engineer Intern'}
+            ),
+            'description': forms.Textarea(
+                attrs={'placeholder': 'Ceritakan kontribusi atau tanggung jawab', 'rows': 5}
+            ),
+            'thumbnail': forms.URLInput(
+                attrs={'placeholder': 'https://contoh.com/gambar.jpg'}
             ),
         }

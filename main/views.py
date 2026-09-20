@@ -2,7 +2,7 @@ from django.core import serializers
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
 
-from main.forms import ProjectForm
+from main.forms import ExperienceForm, ProjectForm
 from main.models import Experience, Project
 
 
@@ -27,6 +27,23 @@ def show_experience(request):
         'experience_list': Experience.objects.all(),
     }
     return render(request, 'experience.html', context)
+
+
+def create_experience(request):
+    if request.method == 'POST':
+        form = ExperienceForm(request.POST)
+        if form.is_valid():
+            form.save()
+            return redirect('main:show_experience')
+    else:
+        form = ExperienceForm()
+
+    context = {
+        'name': 'Adinata Alaudin Pranaja',
+        'short_name': 'Adinata',
+        'form': form,
+    }
+    return render(request, 'create_experience.html', context)
 
 
 def show_projects(request):

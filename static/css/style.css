@@ -166,6 +166,18 @@ h1, .brand {
     margin-bottom: 1.5rem;
 }
 
+.experience-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 1rem;
+    margin-bottom: 2rem;
+}
+
+.experience-header h1 {
+    margin-bottom: 0;
+}
+
 .project-header h1 {
     margin-bottom: 0;
 }
@@ -580,6 +592,7 @@ h1, .brand {
     }
 
     .project-header,
+    .experience-header,
     .project-search,
     .project-delete-modal__actions {
         align-items: stretch;
