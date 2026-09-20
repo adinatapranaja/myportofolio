@@ -139,6 +139,31 @@ class MainTest(TestCase):
             Experience.objects.filter(title='Backend Developer Intern').exists()
         )
 
+    def test_experiences_json_returns_serialized_experiences(self):
+        response = self.client.get(reverse('main:get_experiences_json'))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response['Content-Type'], 'application/json')
+        payload = json.loads(response.content)
+        titles = [experience['fields']['title'] for experience in payload]
+        self.assertIn(self.experience.title, titles)
+
+    def test_experiences_json_filters_by_title(self):
+        Experience.objects.create(
+            title='Product Designer',
+            description='Merancang antarmuka produk.',
+            category='part-time',
+        )
+
+        response = self.client.get(
+            reverse('main:get_experiences_json'),
+            {'title': 'Asisten Dosen'},
+        )
+
+        payload = json.loads(response.content)
+        self.assertEqual(len(payload), 1)
+        self.assertEqual(payload[0]['fields']['title'], self.experience.title)
+
     def test_projects_json_returns_serialized_projects(self):
         response = self.client.get(reverse('main:get_projects_json'))
 

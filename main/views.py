@@ -21,10 +21,16 @@ def show_main(request):
 
 
 def show_experience(request):
+    json_response = get_experiences_json(request)
+    experiences = serializers.deserialize(
+        'json',
+        json_response.content.decode('utf-8'),
+    )
+
     context = {
         'name': 'Adinata Alaudin Pranaja',
         'short_name': 'Adinata',
-        'experience_list': Experience.objects.all(),
+        'experience_list': [experience.object for experience in experiences],
     }
     return render(request, 'experience.html', context)
 
@@ -44,6 +50,17 @@ def create_experience(request):
         'form': form,
     }
     return render(request, 'create_experience.html', context)
+
+
+def get_experiences_json(request):
+    title_query = request.GET.get('title', '').strip()
+    experiences = Experience.objects.all()
+
+    if title_query:
+        experiences = experiences.filter(title__icontains=title_query)
+
+    experiences_json = serializers.serialize('json', experiences)
+    return HttpResponse(experiences_json, content_type='application/json')
 
 
 def show_projects(request):
