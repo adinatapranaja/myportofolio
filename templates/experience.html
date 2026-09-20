@@ -24,6 +24,9 @@
                             {% else %}
                                 <p class="experience-status">Selesai</p>
                             {% endif %}
+                            <div class="experience-actions">
+                                <a class="button button-small" href="{% url 'main:edit_experience' experience.id %}">Edit</a>
+                            </div>
                         </article>
                     {% empty %}
                         <p class="empty-state">Belum ada pengalaman yang ditambahkan.</p>

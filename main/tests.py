@@ -164,6 +164,31 @@ class MainTest(TestCase):
         self.assertEqual(len(payload), 1)
         self.assertEqual(payload[0]['fields']['title'], self.experience.title)
 
+    def test_edit_experience_page_is_accessible(self):
+        response = self.client.get(
+            reverse('main:edit_experience', args=[self.experience.id]),
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, 'edit_experience.html')
+        self.assertContains(response, 'csrfmiddlewaretoken')
+
+    def test_edit_experience_updates_data(self):
+        response = self.client.post(
+            reverse('main:edit_experience', args=[self.experience.id]),
+            {
+                'title': 'Teaching Assistant PBP',
+                'description': 'Mengembangkan materi dan membantu praktikum.',
+                'category': 'part-time',
+                'thumbnail': 'https://example.com/pbp.jpg',
+            },
+        )
+
+        self.assertRedirects(response, reverse('main:show_experience'))
+        self.experience.refresh_from_db()
+        self.assertEqual(self.experience.title, 'Teaching Assistant PBP')
+        self.assertEqual(self.experience.thumbnail, 'https://example.com/pbp.jpg')
+
     def test_projects_json_returns_serialized_projects(self):
         response = self.client.get(reverse('main:get_projects_json'))
 

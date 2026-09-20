@@ -52,6 +52,26 @@ def create_experience(request):
     return render(request, 'create_experience.html', context)
 
 
+def edit_experience(request, experience_id):
+    experience = get_object_or_404(Experience, pk=experience_id)
+
+    if request.method == 'POST':
+        form = ExperienceForm(request.POST, instance=experience)
+        if form.is_valid():
+            form.save()
+            return redirect('main:show_experience')
+    else:
+        form = ExperienceForm(instance=experience)
+
+    context = {
+        'name': 'Adinata Alaudin Pranaja',
+        'short_name': 'Adinata',
+        'experience': experience,
+        'form': form,
+    }
+    return render(request, 'edit_experience.html', context)
+
+
 def get_experiences_json(request):
     title_query = request.GET.get('title', '').strip()
     experiences = Experience.objects.all()

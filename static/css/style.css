@@ -445,6 +445,10 @@ h1, .brand {
     padding-bottom: 0;
 }
 
+.experience-actions {
+    margin-top: 1rem;
+}
+
 .experience-label {
     margin-bottom: 0.25rem;
     color: var(--accent-dark);
