@@ -189,6 +189,22 @@ class MainTest(TestCase):
         self.assertEqual(self.experience.title, 'Teaching Assistant PBP')
         self.assertEqual(self.experience.thumbnail, 'https://example.com/pbp.jpg')
 
+    def test_delete_experience_requires_post(self):
+        response = self.client.get(
+            reverse('main:delete_experience', args=[self.experience.id]),
+        )
+
+        self.assertRedirects(response, reverse('main:show_experience'))
+        self.assertTrue(Experience.objects.filter(id=self.experience.id).exists())
+
+    def test_delete_experience_removes_data(self):
+        response = self.client.post(
+            reverse('main:delete_experience', args=[self.experience.id]),
+        )
+
+        self.assertRedirects(response, reverse('main:show_experience'))
+        self.assertFalse(Experience.objects.filter(id=self.experience.id).exists())
+
     def test_projects_json_returns_serialized_projects(self):
         response = self.client.get(reverse('main:get_projects_json'))
 

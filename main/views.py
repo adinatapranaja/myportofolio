@@ -83,6 +83,15 @@ def get_experiences_json(request):
     return HttpResponse(experiences_json, content_type='application/json')
 
 
+def delete_experience(request, experience_id):
+    experience = get_object_or_404(Experience, pk=experience_id)
+
+    if request.method == 'POST':
+        experience.delete()
+
+    return redirect('main:show_experience')
+
+
 def show_projects(request):
     json_response = get_projects_json(request)
     projects = serializers.deserialize(

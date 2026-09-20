@@ -147,5 +147,13 @@ python manage.py test main
 
 3. `makemigrations` membuat berkas migration yang mencatat perubahan pada definisi model, sedangkan `migrate` menerapkan perubahan yang sudah tercatat tersebut ke struktur database. Contohnya, ketika saya menambahkan model `Project` dengan field `title`, `description`, dan `technologies`, saya menjalankan `python manage.py makemigrations` untuk membuat migration `0002_project.py`, kemudian `python manage.py migrate` untuk membuat tabel `Project` di database.
 
+### Tugas 3
+
+1. `ModelForm` digunakan karena Django dapat membentuk field form berdasarkan model, menjalankan validasi yang sesuai dengan tipe field model, dan menyimpan data melalui `form.save()`. Pendekatan ini mengurangi boilerplate serta menjaga form tetap selaras saat model berubah. `{% csrf_token %}` wajib ada pada form yang mengubah data karena Django memverifikasi token tersebut untuk memastikan request POST benar-benar berasal dari halaman aplikasi yang sah, bukan dari situs lain yang mencoba melakukan *cross-site request forgery*.
+
+2. JSON lebih disukai pada aplikasi web modern karena lebih ringkas daripada XML, mudah dibaca, dan diproses secara native oleh JavaScript. JSON cocok untuk struktur objek dan array yang umum dipakai oleh REST API, sedangkan XML membutuhkan banyak tag pembuka/penutup sehingga ukuran payload serta proses parsing biasanya lebih besar.
+
+3. Saat endpoint `/api/experiences/` diakses, Django memanggil `get_experiences_json`, mengambil queryset `Experience`, lalu mengubahnya menggunakan `serializers.serialize("json", experiences)`. Respons dikirim dengan `content_type="application/json"`. Serialisasi diperlukan karena objek model Django—termasuk UUID dan field tanggal—bukan objek JSON bawaan. Pada halaman Experience, respons tersebut dideserialisasi kembali agar template dapat bekerja dengan objek `Experience`.
+
 ### AI Disclosure
 Dalam pengerjaan project ini, saya menggunakan bantuan AI secara terbatas, yaitu untuk membantu merapikan format penulisan pada file README.md agar lebih terstruktur dan mudah dibaca, serta untuk mencari referensi dan tutorial dalam mengembangkan desain web yang saya buat. Seluruh proses pengembangan, logika, dan implementasi tetap saya kerjakan dan pahami sendiri.
