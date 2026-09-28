@@ -184,7 +184,5 @@ Hak akses aplikasi adalah sebagai berikut:
 
 Project memakai relasi `ManyToManyField` ke `User` agar satu pengguna hanya dapat memberi satu star pada Project yang sama. Endpoint `/api/projects/` tetap dapat diakses publik, tetapi relasi star diserialisasi dengan username, bukan ID internal user.
 
-> Pertanyaan reflektif Tugas 4 belum tercantum pada halaman tugas saat dokumentasi ini diperbarui. Jawaban akan ditambahkan setelah pertanyaannya dipublikasikan.
-
 ### AI Disclosure
 Dalam pengerjaan project ini, saya menggunakan bantuan AI secara terbatas, yaitu untuk membantu merapikan format penulisan pada file README.md agar lebih terstruktur dan mudah dibaca, serta untuk mencari referensi dan tutorial dalam mengembangkan desain web yang saya buat. Seluruh proses pengembangan, logika, dan implementasi tetap saya kerjakan dan pahami sendiri.
