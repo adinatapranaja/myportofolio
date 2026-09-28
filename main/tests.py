@@ -12,6 +12,10 @@ from main.models import Experience, Project
 @override_settings(ALLOWED_HOSTS=['testserver'])
 class MainTest(TestCase):
     def setUp(self):
+        self.owner = User.objects.create_superuser(
+            username='portfolio-owner',
+            password='StrongPassword123!',
+        )
         self.experience = Experience.objects.create(
             title='Asisten Dosen PBP',
             description='Membangun aplikasi web yang aman dan responsif.',
@@ -185,6 +189,7 @@ class MainTest(TestCase):
         self.assertContains(response, 'Belum ada proyek yang ditambahkan.')
 
     def test_create_project_page_is_accessible(self):
+        self.client.force_login(self.owner)
         response = self.client.get(reverse('main:create_project'))
 
         self.assertEqual(response.status_code, 200)
@@ -192,6 +197,7 @@ class MainTest(TestCase):
         self.assertContains(response, 'csrfmiddlewaretoken')
 
     def test_create_project_saves_valid_data(self):
+        self.client.force_login(self.owner)
         response = self.client.post(
             reverse('main:create_project'),
             {
@@ -330,6 +336,7 @@ class MainTest(TestCase):
         self.assertNotContains(response, 'Secure Event Attendance Platform')
 
     def test_delete_project_requires_post(self):
+        self.client.force_login(self.owner)
         response = self.client.get(
             reverse('main:delete_project', args=[self.project.id]),
         )
@@ -338,9 +345,63 @@ class MainTest(TestCase):
         self.assertTrue(Project.objects.filter(id=self.project.id).exists())
 
     def test_delete_project_removes_project(self):
+        self.client.force_login(self.owner)
         response = self.client.post(
             reverse('main:delete_project', args=[self.project.id]),
         )
 
         self.assertRedirects(response, reverse('main:show_projects'))
         self.assertFalse(Project.objects.filter(id=self.project.id).exists())
+
+    def test_guest_is_redirected_when_opening_project_management_page(self):
+        response = self.client.get(reverse('main:create_project'))
+
+        self.assertRedirects(
+            response,
+            f'{reverse("main:login")}?next={reverse("main:create_project")}',
+        )
+
+    def test_regular_user_cannot_create_or_delete_projects(self):
+        user = User.objects.create_user(
+            username='regular-user',
+            password='StrongPassword123!',
+        )
+        self.client.force_login(user)
+
+        create_response = self.client.get(reverse('main:create_project'))
+        delete_response = self.client.post(
+            reverse('main:delete_project', args=[self.project.id]),
+        )
+
+        self.assertEqual(create_response.status_code, 403)
+        self.assertEqual(delete_response.status_code, 403)
+        self.assertTrue(Project.objects.filter(id=self.project.id).exists())
+
+    def test_project_star_can_be_toggled_by_authenticated_user(self):
+        user = User.objects.create_user(
+            username='star-user',
+            password='StrongPassword123!',
+        )
+        self.client.force_login(user)
+
+        first_response = self.client.post(
+            reverse('main:toggle_star', args=[self.project.id]),
+        )
+        self.assertRedirects(first_response, reverse('main:show_projects'))
+        self.assertTrue(self.project.starred_by.filter(pk=user.pk).exists())
+
+        second_response = self.client.post(
+            reverse('main:toggle_star', args=[self.project.id]),
+        )
+        self.assertRedirects(second_response, reverse('main:show_projects'))
+        self.assertFalse(self.project.starred_by.filter(pk=user.pk).exists())
+
+    def test_guest_is_redirected_when_starring_project(self):
+        response = self.client.post(
+            reverse('main:toggle_star', args=[self.project.id]),
+        )
+
+        self.assertRedirects(
+            response,
+            f'{reverse("main:login")}?next={reverse("main:toggle_star", args=[self.project.id])}',
+        )
