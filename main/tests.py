@@ -1,6 +1,6 @@
 import json
 
-from django.contrib.auth.models import User
+from django.contrib.auth.models import Group, User
 from django.test import TestCase
 from django.test import override_settings
 from django.urls import reverse
@@ -16,6 +16,7 @@ class MainTest(TestCase):
             username='portfolio-owner',
             password='StrongPassword123!',
         )
+        self.editor_group, _ = Group.objects.get_or_create(name='Editor')
         self.experience = Experience.objects.create(
             title='Asisten Dosen PBP',
             description='Membangun aplikasi web yang aman dan responsif.',
@@ -211,6 +212,77 @@ class MainTest(TestCase):
 
         self.assertRedirects(response, reverse('main:show_projects'))
         self.assertTrue(Project.objects.filter(title='Project Baru').exists())
+
+    def test_editor_can_open_and_update_project(self):
+        editor = User.objects.create_user(
+            username='portfolio-editor',
+            password='StrongPassword123!',
+        )
+        editor.groups.add(self.editor_group)
+        self.client.force_login(editor)
+
+        page_response = self.client.get(
+            reverse('main:edit_project', args=[self.project.id]),
+        )
+        update_response = self.client.post(
+            reverse('main:edit_project', args=[self.project.id]),
+            {
+                'title': 'Sistem Kehadiran yang Diperbarui',
+                'description': 'Deskripsi setelah diperbarui oleh editor.',
+                'technologies': 'Django, PostgreSQL',
+                'project_url': 'https://example.com/updated-project',
+                'repository_url': 'https://github.com/adinatapranaja/updated-project',
+            },
+        )
+
+        self.assertEqual(page_response.status_code, 200)
+        self.assertTemplateUsed(page_response, 'edit_project.html')
+        self.assertRedirects(update_response, reverse('main:show_projects'))
+        self.project.refresh_from_db()
+        self.assertEqual(self.project.title, 'Sistem Kehadiran yang Diperbarui')
+
+    def test_regular_user_cannot_edit_project(self):
+        user = User.objects.create_user(
+            username='cannot-edit',
+            password='StrongPassword123!',
+        )
+        self.client.force_login(user)
+
+        response = self.client.get(
+            reverse('main:edit_project', args=[self.project.id]),
+        )
+
+        self.assertEqual(response.status_code, 403)
+
+    def test_guest_is_redirected_when_opening_project_edit_page(self):
+        response = self.client.get(
+            reverse('main:edit_project', args=[self.project.id]),
+        )
+
+        self.assertRedirects(
+            response,
+            f'{reverse("main:login")}?next={reverse("main:edit_project", args=[self.project.id])}',
+        )
+
+    def test_editor_sees_edit_control_without_owner_controls(self):
+        editor = User.objects.create_user(
+            username='editor-controls',
+            password='StrongPassword123!',
+        )
+        editor.groups.add(self.editor_group)
+        self.client.force_login(editor)
+
+        response = self.client.get(reverse('main:show_projects'))
+
+        self.assertContains(
+            response,
+            reverse('main:edit_project', args=[self.project.id]),
+        )
+        self.assertNotContains(response, reverse('main:create_project'))
+        self.assertNotContains(
+            response,
+            reverse('main:delete_project', args=[self.project.id]),
+        )
 
     def test_create_experience_page_is_accessible(self):
         response = self.client.get(reverse('main:create_experience'))

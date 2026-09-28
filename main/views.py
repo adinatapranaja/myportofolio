@@ -28,6 +28,14 @@ def show_main(request):
     return render(request, 'index.html', context)
 
 
+def is_editor(user):
+    return user.is_authenticated and user.groups.filter(name='Editor').exists()
+
+
+def can_edit_projects(user):
+    return user.is_superuser or is_editor(user)
+
+
 def register(request):
     form = UserCreationForm(request.POST or None)
 
@@ -157,6 +165,7 @@ def show_projects(request):
         'short_name': 'Adinata',
         'project_list': [project.object for project in projects],
         'title_query': request.GET.get('title', '').strip(),
+        'is_editor': is_editor(request.user),
     }
     return render(request, 'projects.html', context)
 
@@ -179,6 +188,30 @@ def create_project(request):
         'form': form,
     }
     return render(request, 'create_project.html', context)
+
+
+@login_required(login_url='/login/')
+def edit_project(request, project_id):
+    if not can_edit_projects(request.user):
+        raise PermissionDenied
+
+    project = get_object_or_404(Project, pk=project_id)
+
+    if request.method == 'POST':
+        form = ProjectForm(request.POST, instance=project)
+        if form.is_valid():
+            form.save()
+            return redirect('main:show_projects')
+    else:
+        form = ProjectForm(instance=project)
+
+    context = {
+        'name': 'Adinata Alaudin Pranaja',
+        'short_name': 'Adinata',
+        'project': project,
+        'form': form,
+    }
+    return render(request, 'edit_project.html', context)
 
 
 def get_projects_json(request):

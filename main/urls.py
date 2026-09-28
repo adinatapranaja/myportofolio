@@ -5,6 +5,7 @@ from main.views import (
     create_experience,
     delete_experience,
     delete_project,
+    edit_project,
     edit_experience,
     get_experiences_json,
     get_projects_json,
@@ -43,6 +44,11 @@ urlpatterns = [
     ),
     path('projects/', show_projects, name='show_projects'),
     path('projects/add/', create_project, name='create_project'),
+    path(
+        'projects/<uuid:project_id>/edit/',
+        edit_project,
+        name='edit_project',
+    ),
     path('api/projects/', get_projects_json, name='get_projects_json'),
     path(
         'projects/<uuid:project_id>/delete/',
