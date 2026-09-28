@@ -5,6 +5,7 @@ from django.contrib.auth.forms import UserCreationForm
 from django.core import serializers
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
+from django.utils import timezone
 
 from main.forms import ExperienceForm, ProjectForm
 from main.models import Experience, Project
@@ -20,6 +21,7 @@ def show_main(request):
             'Full Stack Developer | Purwadhika Graduate | '
             'University of Indonesia Information Systems Student'
         ),
+        'last_login': request.COOKIES.get('last_login'),
     }
     return render(request, 'index.html', context)
 
@@ -45,7 +47,12 @@ def login_user(request):
 
     if request.method == 'POST' and form.is_valid():
         login(request, form.get_user())
-        return redirect('main:show_main')
+        response = redirect('main:show_main')
+        response.set_cookie(
+            'last_login',
+            timezone.now().strftime('%d %B %Y, %H:%M'),
+        )
+        return response
 
     context = {
         'name': 'Adinata Alaudin Pranaja',
@@ -59,7 +66,9 @@ def logout_user(request):
     if request.method == 'POST':
         logout(request)
 
-    return redirect('main:show_main')
+    response = redirect('main:show_main')
+    response.delete_cookie('last_login')
+    return response
 
 
 def show_experience(request):

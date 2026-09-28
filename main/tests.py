@@ -78,7 +78,16 @@ class MainTest(TestCase):
         )
 
         self.assertRedirects(response, reverse('main:show_main'))
+        self.assertIn('last_login', response.cookies)
         self.assertEqual(self.client.get(reverse('main:show_main')).wsgi_request.user.username, 'adinata-login')
+
+    def test_home_displays_last_login_cookie(self):
+        response = self.client.get(
+            reverse('main:show_main'),
+            HTTP_COOKIE='last_login=28 September 2026, 10:00',
+        )
+
+        self.assertContains(response, 'Last login: 28 September 2026, 10:00')
 
     def test_navbar_shows_register_and_login_for_guest(self):
         response = self.client.get(reverse('main:show_main'))
@@ -97,6 +106,8 @@ class MainTest(TestCase):
         response = self.client.post(reverse('main:logout'))
 
         self.assertRedirects(response, reverse('main:show_main'))
+        self.assertIn('last_login', response.cookies)
+        self.assertEqual(response.cookies['last_login']['max-age'], 0)
         response = self.client.get(reverse('main:show_main'))
         self.assertNotContains(response, 'Hi, adinata-logout')
         self.assertContains(response, 'Login')

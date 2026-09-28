@@ -138,6 +138,12 @@ h1, .brand {
     color: var(--text-muted);
 }
 
+.last-login {
+    margin-top: 1rem;
+    color: var(--text-muted);
+    font-size: 0.9rem;
+}
+
 .project-form {
     padding: 1.5rem;
     border: 1px solid var(--line);

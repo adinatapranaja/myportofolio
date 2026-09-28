@@ -29,6 +29,9 @@
                             <dd>{{ study_program }}</dd>
                         </div>
                     </dl>
+                    {% if last_login %}
+                        <p class="last-login">Last login: {{ last_login }}</p>
+                    {% endif %}
                     <div class="social-links">
                         <a href="https://github.com/adinatapranaja" class="social-link">GitHub</a>
                         <a href="https://www.linkedin.com/in/adinataap" class="social-link">LinkedIn</a>
