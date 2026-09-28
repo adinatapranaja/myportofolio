@@ -1,5 +1,5 @@
 from django.contrib import messages
-from django.contrib.auth import login
+from django.contrib.auth import login, logout
 from django.contrib.auth.forms import AuthenticationForm
 from django.contrib.auth.forms import UserCreationForm
 from django.core import serializers
@@ -53,6 +53,13 @@ def login_user(request):
         'form': form,
     }
     return render(request, 'login.html', context)
+
+
+def logout_user(request):
+    if request.method == 'POST':
+        logout(request)
+
+    return redirect('main:show_main')
 
 
 def show_experience(request):

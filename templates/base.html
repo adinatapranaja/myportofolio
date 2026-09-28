@@ -19,8 +19,16 @@
                 <a href="{% url 'main:show_main' %}#skills">Skills</a>
                 <a href="{% url 'main:show_experience' %}">Experience</a>
                 <a href="{% url 'main:show_projects' %}">Projects</a>
-                <a href="{% url 'main:register' %}">Register</a>
-                <a href="{% url 'main:login' %}">Login</a>
+                {% if user.is_authenticated %}
+                    <span class="nav-user">Hi, {{ user.username }}</span>
+                    <form method="post" action="{% url 'main:logout' %}" class="nav-logout-form">
+                        {% csrf_token %}
+                        <button type="submit" class="nav-logout-button">Logout</button>
+                    </form>
+                {% else %}
+                    <a href="{% url 'main:register' %}">Register</a>
+                    <a href="{% url 'main:login' %}">Login</a>
+                {% endif %}
             </nav>
         </div>
     </header>

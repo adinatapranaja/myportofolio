@@ -80,6 +80,40 @@ class MainTest(TestCase):
         self.assertRedirects(response, reverse('main:show_main'))
         self.assertEqual(self.client.get(reverse('main:show_main')).wsgi_request.user.username, 'adinata-login')
 
+    def test_navbar_shows_register_and_login_for_guest(self):
+        response = self.client.get(reverse('main:show_main'))
+
+        self.assertContains(response, 'Register')
+        self.assertContains(response, 'Login')
+        self.assertNotContains(response, 'Logout')
+
+    def test_logout_ends_authenticated_session(self):
+        user = User.objects.create_user(
+            username='adinata-logout',
+            password='StrongPassword123!',
+        )
+        self.client.force_login(user)
+
+        response = self.client.post(reverse('main:logout'))
+
+        self.assertRedirects(response, reverse('main:show_main'))
+        response = self.client.get(reverse('main:show_main'))
+        self.assertNotContains(response, 'Hi, adinata-logout')
+        self.assertContains(response, 'Login')
+
+    def test_navbar_shows_username_and_logout_for_authenticated_user(self):
+        user = User.objects.create_user(
+            username='adinata-navbar',
+            password='StrongPassword123!',
+        )
+        self.client.force_login(user)
+
+        response = self.client.get(reverse('main:show_main'))
+
+        self.assertContains(response, 'Hi, adinata-navbar')
+        self.assertContains(response, 'Logout')
+        self.assertNotContains(response, 'Register')
+
     def test_nonexistent_page_returns_404(self):
         response = self.client.get('/halaman-yang-tidak-ada/')
 

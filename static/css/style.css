@@ -60,6 +60,29 @@ h1, .brand {
     font-size: 0.95rem;
 }
 
+.nav-user {
+    color: var(--text-muted);
+    font-size: 0.95rem;
+}
+
+.nav-logout-form {
+    display: inline;
+}
+
+.nav-logout-button {
+    border: 0;
+    padding: 0;
+    color: var(--ink);
+    background: transparent;
+    font: inherit;
+    font-size: 0.95rem;
+    cursor: pointer;
+}
+
+.nav-logout-button:hover {
+    color: var(--accent);
+}
+
 .button {
     display: inline-block;
     border: 1px solid var(--ink);
