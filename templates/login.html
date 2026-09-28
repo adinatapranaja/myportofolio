@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+
+{% block meta %}
+    <title>Login - {{ name }}</title>
+{% endblock meta %}
+
+{% block content %}
+    <main>
+        <section class="project-form-section" aria-labelledby="login-title">
+            <div class="container form-container">
+                <p class="section-kicker">Welcome back</p>
+                <h1 id="login-title">Login</h1>
+                <p class="form-intro">Sign in to manage your portfolio.</p>
+
+                <form method="post" class="project-form">
+                    {% csrf_token %}
+                    {% for field in form %}
+                        <div class="form-field">
+                            {{ field.label_tag }}
+                            {{ field }}
+                            {% for error in field.errors %}
+                                <p class="form-error">{{ error }}</p>
+                            {% endfor %}
+                        </div>
+                    {% endfor %}
+                    {% for error in form.non_field_errors %}
+                        <p class="form-error">{{ error }}</p>
+                    {% endfor %}
+                    <button class="button" type="submit">Login</button>
+                </form>
+            </div>
+        </section>
+    </main>
+{% endblock content %}

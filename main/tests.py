@@ -1,5 +1,6 @@
 import json
 
+from django.contrib.auth.models import User
 from django.test import TestCase
 from django.test import override_settings
 from django.urls import reverse
@@ -34,6 +35,50 @@ class MainTest(TestCase):
             response,
             f'href="{reverse("main:show_experience")}"',
         )
+
+    def test_register_page_is_accessible(self):
+        response = self.client.get(reverse('main:register'))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, 'register.html')
+        self.assertContains(response, 'csrfmiddlewaretoken')
+
+    def test_register_creates_user(self):
+        response = self.client.post(
+            reverse('main:register'),
+            {
+                'username': 'adinata-test',
+                'password1': 'StrongPassword123!',
+                'password2': 'StrongPassword123!',
+            },
+        )
+
+        self.assertRedirects(response, reverse('main:login'))
+        self.assertTrue(User.objects.filter(username='adinata-test').exists())
+
+    def test_login_page_is_accessible(self):
+        response = self.client.get(reverse('main:login'))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, 'login.html')
+        self.assertContains(response, 'csrfmiddlewaretoken')
+
+    def test_login_authenticates_user(self):
+        User.objects.create_user(
+            username='adinata-login',
+            password='StrongPassword123!',
+        )
+
+        response = self.client.post(
+            reverse('main:login'),
+            {
+                'username': 'adinata-login',
+                'password': 'StrongPassword123!',
+            },
+        )
+
+        self.assertRedirects(response, reverse('main:show_main'))
+        self.assertEqual(self.client.get(reverse('main:show_main')).wsgi_request.user.username, 'adinata-login')
 
     def test_nonexistent_page_returns_404(self):
         response = self.client.get('/halaman-yang-tidak-ada/')
