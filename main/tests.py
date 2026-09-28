@@ -285,6 +285,7 @@ class MainTest(TestCase):
         )
 
     def test_create_experience_page_is_accessible(self):
+        self.client.force_login(self.owner)
         response = self.client.get(reverse('main:create_experience'))
 
         self.assertEqual(response.status_code, 200)
@@ -292,6 +293,7 @@ class MainTest(TestCase):
         self.assertContains(response, 'csrfmiddlewaretoken')
 
     def test_create_experience_saves_valid_data(self):
+        self.client.force_login(self.owner)
         response = self.client.post(
             reverse('main:create_experience'),
             {
@@ -333,6 +335,7 @@ class MainTest(TestCase):
         self.assertEqual(payload[0]['fields']['title'], self.experience.title)
 
     def test_edit_experience_page_is_accessible(self):
+        self.client.force_login(self.owner)
         response = self.client.get(
             reverse('main:edit_experience', args=[self.experience.id]),
         )
@@ -342,6 +345,7 @@ class MainTest(TestCase):
         self.assertContains(response, 'csrfmiddlewaretoken')
 
     def test_edit_experience_updates_data(self):
+        self.client.force_login(self.owner)
         response = self.client.post(
             reverse('main:edit_experience', args=[self.experience.id]),
             {
@@ -358,6 +362,7 @@ class MainTest(TestCase):
         self.assertEqual(self.experience.thumbnail, 'https://example.com/pbp.jpg')
 
     def test_delete_experience_requires_post(self):
+        self.client.force_login(self.owner)
         response = self.client.get(
             reverse('main:delete_experience', args=[self.experience.id]),
         )
@@ -366,12 +371,63 @@ class MainTest(TestCase):
         self.assertTrue(Experience.objects.filter(id=self.experience.id).exists())
 
     def test_delete_experience_removes_data(self):
+        self.client.force_login(self.owner)
         response = self.client.post(
             reverse('main:delete_experience', args=[self.experience.id]),
         )
 
         self.assertRedirects(response, reverse('main:show_experience'))
         self.assertFalse(Experience.objects.filter(id=self.experience.id).exists())
+
+    def test_editor_can_update_experience(self):
+        editor = User.objects.create_user(
+            username='experience-editor',
+            password='StrongPassword123!',
+        )
+        editor.groups.add(self.editor_group)
+        self.client.force_login(editor)
+
+        response = self.client.post(
+            reverse('main:edit_experience', args=[self.experience.id]),
+            {
+                'title': 'Updated Teaching Assistant',
+                'description': 'Pengalaman diperbarui oleh editor.',
+                'category': 'part-time',
+                'thumbnail': '',
+            },
+        )
+
+        self.assertRedirects(response, reverse('main:show_experience'))
+        self.experience.refresh_from_db()
+        self.assertEqual(self.experience.title, 'Updated Teaching Assistant')
+
+    def test_regular_user_cannot_manage_experiences(self):
+        user = User.objects.create_user(
+            username='experience-user',
+            password='StrongPassword123!',
+        )
+        self.client.force_login(user)
+
+        create_response = self.client.get(reverse('main:create_experience'))
+        edit_response = self.client.get(
+            reverse('main:edit_experience', args=[self.experience.id]),
+        )
+        delete_response = self.client.post(
+            reverse('main:delete_experience', args=[self.experience.id]),
+        )
+
+        self.assertEqual(create_response.status_code, 403)
+        self.assertEqual(edit_response.status_code, 403)
+        self.assertEqual(delete_response.status_code, 403)
+        self.assertTrue(Experience.objects.filter(id=self.experience.id).exists())
+
+    def test_guest_is_redirected_when_managing_experience(self):
+        response = self.client.get(reverse('main:create_experience'))
+
+        self.assertRedirects(
+            response,
+            f'{reverse("main:login")}?next={reverse("main:create_experience")}',
+        )
 
     def test_projects_json_returns_serialized_projects(self):
         response = self.client.get(reverse('main:get_projects_json'))

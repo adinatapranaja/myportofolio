@@ -32,7 +32,7 @@ def is_editor(user):
     return user.is_authenticated and user.groups.filter(name='Editor').exists()
 
 
-def can_edit_projects(user):
+def can_edit_portfolio(user):
     return user.is_superuser or is_editor(user)
 
 
@@ -92,11 +92,16 @@ def show_experience(request):
         'name': 'Adinata Alaudin Pranaja',
         'short_name': 'Adinata',
         'experience_list': [experience.object for experience in experiences],
+        'is_editor': is_editor(request.user),
     }
     return render(request, 'experience.html', context)
 
 
+@login_required(login_url='/login/')
 def create_experience(request):
+    if not request.user.is_superuser:
+        raise PermissionDenied
+
     if request.method == 'POST':
         form = ExperienceForm(request.POST)
         if form.is_valid():
@@ -113,7 +118,11 @@ def create_experience(request):
     return render(request, 'create_experience.html', context)
 
 
+@login_required(login_url='/login/')
 def edit_experience(request, experience_id):
+    if not can_edit_portfolio(request.user):
+        raise PermissionDenied
+
     experience = get_object_or_404(Experience, pk=experience_id)
 
     if request.method == 'POST':
@@ -144,7 +153,11 @@ def get_experiences_json(request):
     return HttpResponse(experiences_json, content_type='application/json')
 
 
+@login_required(login_url='/login/')
 def delete_experience(request, experience_id):
+    if not request.user.is_superuser:
+        raise PermissionDenied
+
     experience = get_object_or_404(Experience, pk=experience_id)
 
     if request.method == 'POST':
@@ -192,7 +205,7 @@ def create_project(request):
 
 @login_required(login_url='/login/')
 def edit_project(request, project_id):
-    if not can_edit_projects(request.user):
+    if not can_edit_portfolio(request.user):
         raise PermissionDenied
 
     project = get_object_or_404(Project, pk=project_id)
