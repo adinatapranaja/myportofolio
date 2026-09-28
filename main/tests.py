@@ -58,8 +58,15 @@ class MainTest(TestCase):
             },
         )
 
-        self.assertRedirects(response, reverse('main:login'))
+        self.assertRedirects(
+            response,
+            reverse('main:login'),
+            fetch_redirect_response=False,
+        )
         self.assertTrue(User.objects.filter(username='adinata-test').exists())
+
+        login_response = self.client.get(reverse('main:login'))
+        self.assertContains(login_response, 'Account created successfully. Please log in.')
 
     def test_login_page_is_accessible(self):
         response = self.client.get(reverse('main:login'))
@@ -437,6 +444,21 @@ class MainTest(TestCase):
         payload = json.loads(response.content)
         titles = [project['fields']['title'] for project in payload]
         self.assertIn(self.project.title, titles)
+
+    def test_projects_json_uses_username_instead_of_user_id_for_stars(self):
+        user = User.objects.create_user(
+            username='api-stargazer',
+            password='StrongPassword123!',
+        )
+        self.project.starred_by.add(user)
+
+        response = self.client.get(reverse('main:get_projects_json'))
+
+        payload = json.loads(response.content)
+        project_data = next(
+            item for item in payload if item['fields']['title'] == self.project.title
+        )
+        self.assertEqual(project_data['fields']['starred_by'], [[user.username]])
 
     def test_projects_json_filters_by_title(self):
         Project.objects.create(

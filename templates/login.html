@@ -12,6 +12,10 @@
                 <h1 id="login-title">Login</h1>
                 <p class="form-intro">Sign in to manage your portfolio.</p>
 
+                {% for message in messages %}
+                    <p class="form-message">{{ message }}</p>
+                {% endfor %}
+
                 <form method="post" class="project-form">
                     {% csrf_token %}
                     {% for field in form %}

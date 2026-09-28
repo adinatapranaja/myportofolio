@@ -66,6 +66,12 @@ Tutorial 3 menambahkan `base.html` sebagai skeleton agar navbar dan footer digun
 
 Sumber: [Tutorial 3 PBP](https://pbp.cs.ui.ac.id/tutorial/tutorial-3.html).
 
+### Tutorial 4 — Authentication, Session, dan Cookies
+
+Tutorial 4 menambahkan autentikasi bawaan Django melalui halaman Register, Login, dan Logout. Setelah login, Django menyimpan identitas pengguna dalam session dan aplikasi menyimpan cookie `last_login` untuk menampilkan waktu login terakhir. Tutorial ini juga menerapkan otorisasi: hanya superuser yang dapat membuat atau menghapus Project, sedangkan user yang sudah login dapat memberi atau membatalkan star pada Project.
+
+Sumber: [Tutorial 4 PBP](https://pbp.cs.ui.ac.id/tutorial/tutorial-4.html).
+
 ## Struktur dan penjelasan file
 
 ```text
@@ -103,8 +109,8 @@ myportofolio/
 | `portofolio/urls.py` | Menghubungkan URL project ke `main.urls` dan menyediakan route `/admin/`. |
 | `main/models.py` | Mendefinisikan model database `Experience` dan `Project`. |
 | `main/forms.py` | `ProjectForm` berbasis `ModelForm` untuk memvalidasi serta menyimpan Project dari halaman form. |
-| `main/views.py` | View halaman profil, pengalaman, dan Project, beserta view form tambah, JSON API, dan hapus Project. |
-| `main/urls.py` | Mendefinisikan route halaman, `/projects/add/`, `/api/projects/`, serta route hapus Project. |
+| `main/views.py` | View halaman profil, pengalaman, Project, autentikasi, form, JSON API, star, dan pemeriksaan hak akses. |
+| `main/urls.py` | Mendefinisikan route halaman, autentikasi, pengelolaan portfolio, JSON API, dan star Project. |
 | `main/migrations/` | Riwayat perubahan struktur database untuk model `Experience` dan `Project`, termasuk data seed portfolio. |
 | `main/tests.py` | Unit test untuk route, model, form tambah, JSON API/filter, serta hapus Project. |
 | `templates/base.html` | Skeleton bersama yang memuat metadata, navbar, footer, dan blok konten halaman. |
@@ -112,6 +118,9 @@ myportofolio/
 | `templates/experience.html` | Menampilkan daftar objek `Experience` secara dinamis menggunakan Django Template Language. |
 | `templates/projects.html` | Menampilkan Project, form pencarian berdasarkan judul, dan kontrol tambah/hapus Project. |
 | `templates/create_project.html` | Halaman form untuk menambahkan Project baru. |
+| `templates/register.html` dan `templates/login.html` | Halaman autentikasi memakai form bawaan Django. |
+| `templates/edit_project.html` | Halaman untuk memperbarui Project oleh Editor atau superuser. |
+| `templates/components/project_star.html` | Komponen form POST untuk memberi atau membatalkan star pada Project. |
 | `templates/components/project_delete_modal.html` | Komponen dialog konfirmasi sebelum sebuah Project dihapus. |
 | `static/css/style.css` | Tampilan halaman, form Project, pencarian, dialog hapus, serta layout responsif. |
 | `static/img/adinata.jpg` | Foto profil yang ditampilkan pada landing page. |
@@ -154,6 +163,28 @@ python manage.py test main
 2. JSON lebih disukai pada aplikasi web modern karena lebih ringkas daripada XML, mudah dibaca, dan diproses secara native oleh JavaScript. JSON cocok untuk struktur objek dan array yang umum dipakai oleh REST API, sedangkan XML membutuhkan banyak tag pembuka/penutup sehingga ukuran payload serta proses parsing biasanya lebih besar.
 
 3. Saat endpoint `/api/experiences/` diakses, Django memanggil `get_experiences_json`, mengambil queryset `Experience`, lalu mengubahnya menggunakan `serializers.serialize("json", experiences)`. Respons dikirim dengan `content_type="application/json"`. Serialisasi diperlukan karena objek model Django—termasuk UUID dan field tanggal—bukan objek JSON bawaan. Pada halaman Experience, respons tersebut dideserialisasi kembali agar template dapat bekerja dengan objek `Experience`.
+
+### Tugas 4
+
+#### Konfigurasi role Editor
+
+1. Jalankan `python manage.py createsuperuser` bila belum memiliki akun pemilik portfolio.
+2. Login ke `/admin/` menggunakan akun superuser tersebut.
+3. Pada menu **Groups**, buat group bernama tepat `Editor`.
+4. Pada menu **Users**, buka akun yang ingin dijadikan editor lalu tambahkan group `Editor` pada bagian Groups.
+
+Hak akses aplikasi adalah sebagai berikut:
+
+| Role | Lihat data | Star Project | Tambah | Edit | Hapus |
+| --- | --- | --- | --- | --- | --- |
+| Guest | Ya | Redirect ke login | Redirect ke login | Redirect ke login | Redirect ke login |
+| User biasa | Ya | Ya | 403 | 403 | 403 |
+| Editor | Ya | Ya | 403 | Ya | 403 |
+| Superuser | Ya | Ya | Ya | Ya | Ya |
+
+Project memakai relasi `ManyToManyField` ke `User` agar satu pengguna hanya dapat memberi satu star pada Project yang sama. Endpoint `/api/projects/` tetap dapat diakses publik, tetapi relasi star diserialisasi dengan username, bukan ID internal user.
+
+> Pertanyaan reflektif Tugas 4 belum tercantum pada halaman tugas saat dokumentasi ini diperbarui. Jawaban akan ditambahkan setelah pertanyaannya dipublikasikan.
 
 ### AI Disclosure
 Dalam pengerjaan project ini, saya menggunakan bantuan AI secara terbatas, yaitu untuk membantu merapikan format penulisan pada file README.md agar lebih terstruktur dan mudah dibaca, serta untuk mencari referensi dan tutorial dalam mengembangkan desain web yang saya buat. Seluruh proses pengembangan, logika, dan implementasi tetap saya kerjakan dan pahami sendiri.
