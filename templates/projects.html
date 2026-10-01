@@ -15,6 +15,11 @@
                         <a class="button" href="{% url 'main:create_project' %}">Add project</a>
                     {% endif %}
                 </div>
+                {% if user.is_superuser %}
+                    <button type="button" class="button button-secondary toast-test-button" onclick="showToast('Notifikasi Sistem', 'Project berhasil dimuat dengan baik!', 'success')">
+                        Test Toast Notifikasi
+                    </button>
+                {% endif %}
                 <form method="get" action="{% url 'main:show_projects' %}" class="project-search">
                     <label class="visually-hidden" for="project-title-search">Search projects by title</label>
                     <input
