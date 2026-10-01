@@ -72,6 +72,18 @@ Tutorial 4 menambahkan autentikasi bawaan Django melalui halaman Register, Login
 
 Sumber: [Tutorial 4 PBP](https://pbp.cs.ui.ac.id/tutorial/tutorial-4.html).
 
+### Tutorial 5 — Web Interactivity with JavaScript
+
+Halaman Projects memuat data melalui Fetch API dari `/api/projects/`, termasuk jumlah star dan status star pengguna saat ini. Pencarian menggunakan debounce 300 ms, membatalkan request lama, dan menyediakan status loading, kosong, serta gagal.
+
+Superuser dapat menambahkan proyek melalui modal dengan POST AJAX ke `/projects/add-ajax/`. Endpoint memakai `ProjectForm`, pemeriksaan hak akses, dan CSRF. Saat berhasil, modal ditutup, daftar diperbarui mengikuti pencarian aktif, dan toast ditampilkan. Saat gagal, input tetap tersedia dan toast menampilkan kesalahan.
+
+Data kartu diisi menggunakan `textContent`, bukan interpolasi ke `innerHTML`; tautan hanya menerima HTTP/HTTPS. `ProjectForm` menghapus tag pada judul, deskripsi, dan teknologi, serta menolak judul yang kosong setelah dibersihkan. Pembersihan server berlaku pada tambah biasa, tambah AJAX, dan edit. `strip_tags` bukan pengganti render aman dan tidak mengubah data lama; teks seperti `List<String>` juga dapat terpotong.
+
+Star dan hapus masih menggunakan POST biasa. Kontrol edit tetap tersedia bagi Editor dan superuser. Kode interaksi terdapat pada `static/js/projects.js`, sedangkan toast pada `static/js/toast.js`.
+
+Sumber: [Tutorial 5 PBP](https://pbp.cs.ui.ac.id/tutorial/tutorial-5.html), berdasarkan salinan HTML yang disimpan.
+
 ## Struktur dan penjelasan file
 
 ```text

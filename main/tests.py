@@ -75,6 +75,51 @@ class MainTest(TestCase):
         response = client.post(url, data, HTTP_X_CSRFTOKEN=client.cookies['csrftoken'].value)
         self.assertEqual(response.status_code, 201)
 
+    def test_project_forms_reject_html_only_titles(self):
+        self.client.force_login(self.owner)
+        data = {
+            'title': '<img src="x" onerror="alert(1)">',
+            'description': 'Description',
+            'technologies': 'Django',
+        }
+        count = Project.objects.count()
+        for endpoint, args, status in [
+            ('main:create_project_ajax', [], 400),
+            ('main:create_project', [], 200),
+            ('main:edit_project', [self.project.pk], 200),
+        ]:
+            with self.subTest(endpoint=endpoint):
+                response = self.client.post(reverse(endpoint, args=args), data)
+                self.assertEqual(response.status_code, status)
+                if endpoint.endswith('_ajax'):
+                    self.assertIn('title', response.json()['errors'])
+                else:
+                    self.assertIn('title', response.context['form'].errors)
+        self.assertEqual(Project.objects.count(), count)
+        self.project.refresh_from_db()
+        self.assertEqual(self.project.title, 'Sistem Kehadiran Event')
+
+    def test_project_forms_strip_html_before_saving(self):
+        self.client.force_login(self.owner)
+        data = {
+            'title': ' <b>Portfolio</b> ',
+            'description': ' <p>Hello <em>world</em></p> ',
+            'technologies': ' <strong>Django</strong> ',
+        }
+        for endpoint, args, status in [
+            ('main:create_project_ajax', [], 201),
+            ('main:create_project', [], 302),
+            ('main:edit_project', [self.project.pk], 302),
+        ]:
+            with self.subTest(endpoint=endpoint):
+                response = self.client.post(reverse(endpoint, args=args), data)
+                self.assertEqual(response.status_code, status)
+        cleaned = Project.objects.filter(title='Portfolio')
+        self.assertEqual(cleaned.count(), 3)
+        for project in cleaned:
+            self.assertEqual(project.description, 'Hello world')
+            self.assertEqual(project.technologies, 'Django')
+
     def test_main_url_is_accessible(self):
         response = self.client.get(reverse('main:show_main'))
 
