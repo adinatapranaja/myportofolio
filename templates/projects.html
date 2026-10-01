@@ -13,7 +13,7 @@
                 <div class="project-header">
                     <h1 id="projects-title">Projects</h1>
                     {% if user.is_superuser %}
-                        <a class="button" href="{% url 'main:create_project' %}">Add project</a>
+                        <button type="button" class="button" popovertarget="add-project-modal">Add project</button>
                     {% endif %}
                 </div>
                 {% if user.is_superuser %}
@@ -65,5 +65,8 @@
             </div>
         </section>
     </main>
+    {% if user.is_superuser %}
+        {% include "components/project_form_modal.html" %}
+    {% endif %}
     <script src="{% static 'js/projects.js' %}" defer></script>
 {% endblock content %}

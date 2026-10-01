@@ -80,6 +80,10 @@ function searchProjects() {
     fetchProjects(searchInput.value.trim());
 }
 
+function closeProjectModal() {
+    document.getElementById('add-project-modal')?.hidePopover();
+}
+
 searchInput.addEventListener('input', () => {
     clearTimeout(searchDebounceTimer);
     projectsAbortController?.abort();

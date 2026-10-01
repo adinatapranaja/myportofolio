@@ -173,6 +173,7 @@ def show_projects(request):
         'title_query': request.GET.get('title', '').strip(),
         'is_editor': is_editor(request.user),
         'card_project': {'id': '00000000-0000-0000-0000-000000000000', 'title': ''},
+        'form': ProjectForm() if request.user.is_superuser else None,
     }
     return render(request, 'projects.html', context)
 
