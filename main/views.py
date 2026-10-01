@@ -5,7 +5,7 @@ from django.contrib.auth.forms import AuthenticationForm
 from django.contrib.auth.forms import UserCreationForm
 from django.core.exceptions import PermissionDenied
 from django.core import serializers
-from django.http import HttpResponse
+from django.http import HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
 
@@ -167,18 +167,12 @@ def delete_experience(request, experience_id):
 
 
 def show_projects(request):
-    json_response = get_projects_json(request)
-    projects = serializers.deserialize(
-        'json',
-        json_response.content.decode('utf-8'),
-    )
-
     context = {
         'name': 'Adinata Alaudin Pranaja',
         'short_name': 'Adinata',
-        'project_list': [project.object for project in projects],
         'title_query': request.GET.get('title', '').strip(),
         'is_editor': is_editor(request.user),
+        'card_project': {'id': '00000000-0000-0000-0000-000000000000', 'title': ''},
     }
     return render(request, 'projects.html', context)
 
@@ -229,17 +223,30 @@ def edit_project(request, project_id):
 
 def get_projects_json(request):
     title_query = request.GET.get('title', '').strip()
-    projects = Project.objects.all()
+    projects = Project.objects.prefetch_related('starred_by').all()
 
     if title_query:
         projects = projects.filter(title__icontains=title_query)
 
-    projects_json = serializers.serialize(
-        'json',
-        projects,
-        use_natural_foreign_keys=True,
-    )
-    return HttpResponse(projects_json, content_type='application/json')
+    data = []
+    for project in projects:
+        starred_users = list(project.starred_by.all())
+        data.append({
+            'model': 'main.project',
+            'pk': str(project.pk),
+            'fields': {
+                'title': project.title,
+                'description': project.description,
+                'technologies': project.technologies,
+                'project_url': project.project_url,
+                'repository_url': project.repository_url,
+                'starred_by': [[user.username] for user in starred_users],
+                'star_count': len(starred_users),
+                'is_starred': request.user.is_authenticated and request.user in starred_users,
+                'starred_by_names': ', '.join(user.username for user in starred_users),
+            },
+        })
+    return JsonResponse(data, safe=False)
 
 
 @login_required(login_url='/login/')

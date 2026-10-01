@@ -4,6 +4,8 @@
     box-sizing: border-box;
 }
 
+.hide { display: none !important; }
+
 :root {
     --ink: #1c1917;
     --paper: #faf6f0;

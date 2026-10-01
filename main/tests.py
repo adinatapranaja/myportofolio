@@ -181,14 +181,14 @@ class MainTest(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertTemplateUsed(response, 'projects.html')
 
-    def test_projects_page_displays_data(self):
+    def test_projects_page_loads_data_via_ajax(self):
         response = self.client.get(reverse('main:show_projects'))
 
-        self.assertContains(response, self.project.title)
-        self.assertContains(response, self.project.description)
-        self.assertContains(response, self.project.technologies)
-        self.assertContains(response, self.project.project_url)
-        self.assertContains(response, self.project.repository_url)
+        self.assertNotContains(response, self.project.title)
+        self.assertContains(response, 'id="projects-grid"')
+        self.assertContains(response, reverse('main:get_projects_json'))
+        self.assertContains(response, 'js/projects.js')
+        self.assertNotIn('project_list', response.context)
 
     def test_empty_projects_page(self):
         Project.objects.all().delete()
@@ -283,12 +283,12 @@ class MainTest(TestCase):
 
         self.assertContains(
             response,
-            reverse('main:edit_project', args=[self.project.id]),
+            reverse('main:edit_project', args=['00000000-0000-0000-0000-000000000000']),
         )
         self.assertNotContains(response, reverse('main:create_project'))
         self.assertNotContains(
             response,
-            reverse('main:delete_project', args=[self.project.id]),
+            reverse('main:delete_project', args=['00000000-0000-0000-0000-000000000000']),
         )
 
     def test_create_experience_page_is_accessible(self):
@@ -476,14 +476,33 @@ class MainTest(TestCase):
         self.assertEqual(len(payload), 1)
         self.assertEqual(payload[0]['fields']['title'], self.project.title)
 
-    def test_projects_page_filters_by_title(self):
+    def test_projects_page_preserves_initial_search_for_ajax(self):
         response = self.client.get(
             reverse('main:show_projects'),
             {'title': 'Kehadiran'},
         )
 
-        self.assertContains(response, self.project.title)
-        self.assertNotContains(response, 'Secure Event Attendance Platform')
+        self.assertContains(response, 'value="Kehadiran"')
+        self.assertNotContains(response, self.project.title)
+
+    def test_projects_json_reports_star_state_for_current_user(self):
+        self.project.starred_by.add(self.owner)
+        endpoint = reverse('main:get_projects_json')
+
+        def fields():
+            return next(item['fields'] for item in self.client.get(endpoint).json()
+                        if item['pk'] == str(self.project.pk))
+
+        anonymous = fields()
+        self.assertEqual(anonymous['star_count'], 1)
+        self.assertFalse(anonymous['is_starred'])
+        self.assertEqual(anonymous['starred_by_names'], self.owner.username)
+        self.client.force_login(self.owner)
+        self.assertTrue(fields()['is_starred'])
+        self.project.starred_by.remove(self.owner)
+        unstarred = fields()
+        self.assertFalse(unstarred['is_starred'])
+        self.assertEqual(unstarred['star_count'], 0)
 
     def test_delete_project_requires_post(self):
         self.client.force_login(self.owner)
