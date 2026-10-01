@@ -1,6 +1,8 @@
 const projectGrid = document.getElementById('projects-grid');
 const searchForm = document.getElementById('project-search-form');
 const searchInput = document.getElementById('project-title-search');
+const SEARCH_DEBOUNCE_DELAY = 300;
+let searchDebounceTimer;
 let projectsAbortController;
 
 function displayProjectsState(state) {
@@ -74,9 +76,20 @@ async function fetchProjects(searchQuery = '') {
     }
 }
 
+function searchProjects() {
+    fetchProjects(searchInput.value.trim());
+}
+
+searchInput.addEventListener('input', () => {
+    clearTimeout(searchDebounceTimer);
+    projectsAbortController?.abort();
+    searchDebounceTimer = setTimeout(searchProjects, SEARCH_DEBOUNCE_DELAY);
+});
+
 searchForm.addEventListener('submit', (event) => {
     event.preventDefault();
-    fetchProjects(searchInput.value.trim());
+    clearTimeout(searchDebounceTimer);
+    searchProjects();
 });
 
 fetchProjects(searchInput.value.trim());
