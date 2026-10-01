@@ -1,7 +1,7 @@
 import json
 
 from django.contrib.auth.models import Group, User
-from django.test import TestCase
+from django.test import Client, TestCase
 from django.test import override_settings
 from django.urls import reverse
 from django.utils import timezone
@@ -29,6 +29,51 @@ class MainTest(TestCase):
             project_url='https://example.com/project',
             repository_url='https://github.com/adinatapranaja/project',
         )
+
+    def test_ajax_create_project_permissions_and_method(self):
+        url = reverse('main:create_project_ajax')
+        count = Project.objects.count()
+        self.assertEqual(self.client.get(url).status_code, 405)
+        response = self.client.post(url, {})
+        self.assertEqual(response.status_code, 403)
+        self.assertIn('message', response.json())
+        user = User.objects.create_user(username='ajax-user')
+        self.client.force_login(user)
+        self.assertEqual(self.client.post(url, {}).status_code, 403)
+        user.groups.add(self.editor_group)
+        self.assertEqual(self.client.post(url, {}).status_code, 403)
+        self.assertEqual(Project.objects.count(), count)
+
+    def test_ajax_create_project_validation_and_success(self):
+        self.client.force_login(self.owner)
+        url = reverse('main:create_project_ajax')
+        count = Project.objects.count()
+        data = {'title': '  ', 'description': 'AJAX project', 'technologies': 'Django'}
+        response = self.client.post(url, data)
+        self.assertEqual(response.status_code, 400)
+        self.assertIn('title', response.json()['errors'])
+        data.update(title='AJAX project', project_url='javascript:alert(1)')
+        response = self.client.post(url, data)
+        self.assertEqual(response.status_code, 400)
+        self.assertIn('project_url', response.json()['errors'])
+        self.assertEqual(Project.objects.count(), count)
+        data['project_url'] = 'https://example.com'
+        response = self.client.post(url, data)
+        self.assertEqual(response.status_code, 201)
+        self.assertEqual(Project.objects.count(), count + 1)
+        self.assertEqual(Project.objects.get(pk=response.json()['pk']).title, data['title'])
+
+    def test_ajax_create_project_requires_csrf(self):
+        client = Client(enforce_csrf_checks=True)
+        client.force_login(self.owner)
+        url = reverse('main:create_project_ajax')
+        data = {'title': 'CSRF project', 'description': 'Protected', 'technologies': 'Django'}
+        count = Project.objects.count()
+        self.assertEqual(client.post(url, data).status_code, 403)
+        self.assertEqual(Project.objects.count(), count)
+        client.get(reverse('main:show_projects'))
+        response = client.post(url, data, HTTP_X_CSRFTOKEN=client.cookies['csrftoken'].value)
+        self.assertEqual(response.status_code, 201)
 
     def test_main_url_is_accessible(self):
         response = self.client.get(reverse('main:show_main'))

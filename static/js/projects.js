@@ -96,4 +96,40 @@ searchForm.addEventListener('submit', (event) => {
     searchProjects();
 });
 
+const projectForm = document.getElementById('project-form');
+
+async function addProject(event) {
+    event.preventDefault();
+    const submitButton = projectForm.querySelector('button[type="submit"]');
+    if (submitButton.disabled) return;
+    submitButton.disabled = true;
+    try {
+        const response = await fetch(projectForm.dataset.ajaxUrl, {
+            method: 'POST',
+            headers: {'X-CSRFToken': projectForm.elements.csrfmiddlewaretoken.value},
+            body: new FormData(projectForm),
+        });
+        const result = await response.json().catch(() => ({}));
+        if (response.ok) {
+            projectForm.reset();
+            closeProjectModal();
+            showToast('Berhasil', 'Proyek baru berhasil ditambahkan!', 'success');
+            clearTimeout(searchDebounceTimer);
+            await fetchProjects(searchInput.value.trim());
+        } else {
+            const errors = result.errors
+                ? Object.values(result.errors).flat().map(error => error.message)
+                : [result.message || `Terjadi kesalahan (status ${response.status}).`];
+            showToast('Gagal menambahkan proyek', errors.join(' '), 'error');
+        }
+    } catch (error) {
+        console.error('Error adding project:', error);
+        showToast('Gagal menambahkan proyek', 'Tidak dapat terhubung ke server. Silakan coba lagi.', 'error');
+    } finally {
+        submitButton.disabled = false;
+    }
+}
+
+projectForm?.addEventListener('submit', addProject);
+
 fetchProjects(searchInput.value.trim());

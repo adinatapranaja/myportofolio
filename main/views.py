@@ -8,6 +8,7 @@ from django.core import serializers
 from django.http import HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
+from django.views.decorators.http import require_POST
 
 from main.forms import ExperienceForm, ProjectForm
 from main.models import Experience, Project
@@ -196,6 +197,18 @@ def create_project(request):
         'form': form,
     }
     return render(request, 'create_project.html', context)
+
+
+@require_POST
+def create_project_ajax(request):
+    if not request.user.is_superuser:
+        return JsonResponse({'message': 'Only the portfolio owner can add projects.'}, status=403)
+
+    form = ProjectForm(request.POST)
+    if form.is_valid():
+        project = form.save()
+        return JsonResponse({'message': 'Project created successfully.', 'pk': str(project.pk)}, status=201)
+    return JsonResponse({'errors': form.errors.get_json_data()}, status=400)
 
 
 @login_required(login_url='/login/')
