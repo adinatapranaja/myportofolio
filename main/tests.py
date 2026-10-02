@@ -30,6 +30,51 @@ class MainTest(TestCase):
             repository_url='https://github.com/adinatapranaja/project',
         )
 
+    def test_ajax_create_experience_permissions_and_method(self):
+        url = reverse('main:create_experience_ajax')
+        count = Experience.objects.count()
+        self.assertEqual(self.client.get(url).status_code, 405)
+        response = self.client.post(url, {})
+        self.assertEqual(response.status_code, 403)
+        self.assertIn('message', response.json())
+        user = User.objects.create_user(username='ajax-user')
+        self.client.force_login(user)
+        self.assertEqual(self.client.post(url, {}).status_code, 403)
+        user.groups.add(self.editor_group)
+        self.assertEqual(self.client.post(url, {}).status_code, 403)
+        self.assertEqual(Experience.objects.count(), count)
+
+    def test_ajax_create_experience_validation_and_success(self):
+        self.client.force_login(self.owner)
+        url = reverse('main:create_experience_ajax')
+        count = Experience.objects.count()
+        data = {'title': '  ', 'description': 'AJAX experience', 'category': 'internship'}
+        response = self.client.post(url, data)
+        self.assertEqual(response.status_code, 400)
+        self.assertIn('title', response.json()['errors'])
+        data.update(title='AJAX experience', thumbnail='javascript:alert(1)')
+        response = self.client.post(url, data)
+        self.assertEqual(response.status_code, 400)
+        self.assertIn('thumbnail', response.json()['errors'])
+        self.assertEqual(Experience.objects.count(), count)
+        data['thumbnail'] = 'https://example.com'
+        response = self.client.post(url, data)
+        self.assertEqual(response.status_code, 201)
+        self.assertEqual(Experience.objects.count(), count + 1)
+        self.assertEqual(Experience.objects.get(pk=response.json()['pk']).title, data['title'])
+
+    def test_ajax_create_experience_requires_csrf(self):
+        client = Client(enforce_csrf_checks=True)
+        client.force_login(self.owner)
+        url = reverse('main:create_experience_ajax')
+        data = {'title': 'CSRF experience', 'description': 'Protected', 'category': 'internship'}
+        count = Experience.objects.count()
+        self.assertEqual(client.post(url, data).status_code, 403)
+        self.assertEqual(Experience.objects.count(), count)
+        client.get(reverse('main:show_experience'))
+        response = client.post(url, data, HTTP_X_CSRFTOKEN=client.cookies['csrftoken'].value)
+        self.assertEqual(response.status_code, 201)
+
     def test_ajax_create_project_permissions_and_method(self):
         url = reverse('main:create_project_ajax')
         count = Project.objects.count()
@@ -267,6 +312,7 @@ class MainTest(TestCase):
                 response = self.client.get(reverse('main:show_experience'), {'title': 'Dosen'})
                 self.assertEqual(response.status_code, 200)
                 self.assertContains(response, 'value="Dosen"')
+                self.assertEqual('id="experience-form"' in response.content.decode(), can_delete)
                 self.assertContains(response, reverse('main:get_experiences_json'))
                 self.assertContains(response, 'csrfmiddlewaretoken')
                 self.assertEqual(reverse('main:edit_experience', args=[placeholder]) in response.content.decode(), can_edit)

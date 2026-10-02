@@ -83,4 +83,44 @@ searchForm.addEventListener('submit', (event) => {
     searchExperiences();
 });
 
+function closeExperienceModal() {
+    document.getElementById('add-experience-modal')?.hidePopover();
+}
+
+const experienceForm = document.getElementById('experience-form');
+
+async function addExperience(event) {
+    event.preventDefault();
+    const submitButton = experienceForm.querySelector('button[type="submit"]');
+    if (submitButton.disabled) return;
+    submitButton.disabled = true;
+    try {
+        const response = await fetch(experienceForm.dataset.ajaxUrl, {
+            method: 'POST',
+            headers: {'X-CSRFToken': experienceForm.elements.csrfmiddlewaretoken.value},
+            body: new FormData(experienceForm),
+        });
+        const result = await response.json().catch(() => ({}));
+        if (response.ok) {
+            experienceForm.reset();
+            closeExperienceModal();
+            showToast('Berhasil', 'Pengalaman baru berhasil ditambahkan!', 'success');
+            clearTimeout(searchDebounceTimer);
+            await fetchExperiences(searchInput.value.trim());
+        } else {
+            const errors = result.errors
+                ? Object.values(result.errors).flat().map(error => error.message)
+                : [result.message || `Terjadi kesalahan (status ${response.status}).`];
+            showToast('Gagal menambahkan pengalaman', errors.join(' '), 'error');
+        }
+    } catch (error) {
+        console.error('Error adding experience:', error);
+        showToast('Gagal menambahkan pengalaman', 'Tidak dapat terhubung ke server. Silakan coba lagi.', 'error');
+    } finally {
+        submitButton.disabled = false;
+    }
+}
+
+experienceForm?.addEventListener('submit', addExperience);
+
 fetchExperiences(searchInput.value.trim());

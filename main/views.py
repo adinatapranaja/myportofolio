@@ -87,6 +87,7 @@ def show_experience(request):
         'short_name': 'Adinata',
         'title_query': request.GET.get('title', '').strip(),
         'card_experience': {'id': '00000000-0000-0000-0000-000000000000', 'title': ''},
+        'form': ExperienceForm() if request.user.is_superuser else None,
         'is_editor': is_editor(request.user),
     }
     return render(request, 'experience.html', context)
@@ -111,6 +112,18 @@ def create_experience(request):
         'form': form,
     }
     return render(request, 'create_experience.html', context)
+
+
+@require_POST
+def create_experience_ajax(request):
+    if not request.user.is_superuser:
+        return JsonResponse({'message': 'Only the portfolio owner can add experiences.'}, status=403)
+
+    form = ExperienceForm(request.POST)
+    if form.is_valid():
+        experience = form.save()
+        return JsonResponse({'message': 'Experience created successfully.', 'pk': str(experience.pk)}, status=201)
+    return JsonResponse({'errors': form.errors.get_json_data()}, status=400)
 
 
 @login_required(login_url='/login/')
