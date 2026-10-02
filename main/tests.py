@@ -406,6 +406,46 @@ class MainTest(TestCase):
             Experience.objects.filter(title='Backend Developer Intern').exists()
         )
 
+    def test_experience_star_and_personalized_json(self):
+        url = reverse('main:toggle_experience_star', args=[self.experience.pk])
+        self.assertEqual(self.client.post(url).status_code, 302)
+        self.assertEqual(self.experience.starred_by.count(), 0)
+        user = User.objects.create_user(username='experience-reader')
+        self.client.force_login(user)
+        self.assertEqual(self.client.get(url).status_code, 405)
+        self.assertEqual(self.client.post(url).status_code, 302)
+        self.assertEqual(self.experience.starred_by.count(), 1)
+        self.experience.starred_by.add(user)
+        self.assertEqual(self.experience.starred_by.count(), 1)
+
+        def fields():
+            return next(item['fields'] for item in self.client.get(
+                reverse('main:get_experiences_json')).json()
+                if item['pk'] == str(self.experience.pk))
+
+        data = fields()
+        self.assertTrue(data['is_starred'])
+        self.assertEqual(data['star_count'], 1)
+        self.assertEqual(data['starred_by_names'], user.username)
+        self.assertEqual(data['category_display'], 'Part-Time')
+        self.assertTrue(data['is_ongoing'])
+        self.client.logout()
+        self.assertFalse(fields()['is_starred'])
+        self.assertEqual(fields()['star_count'], 1)
+        self.client.force_login(user)
+        self.client.post(url)
+        self.assertEqual(fields()['star_count'], 0)
+
+    def test_experience_star_requires_csrf(self):
+        client = Client(enforce_csrf_checks=True)
+        client.force_login(self.owner)
+        url = reverse('main:toggle_experience_star', args=[self.experience.pk])
+        self.assertEqual(client.post(url).status_code, 403)
+        self.assertEqual(self.experience.starred_by.count(), 0)
+        client.get(reverse('main:show_experience'))
+        self.assertEqual(client.post(url, HTTP_X_CSRFTOKEN=client.cookies['csrftoken'].value).status_code, 302)
+        self.assertEqual(self.experience.starred_by.count(), 1)
+
     def test_experiences_json_returns_serialized_experiences(self):
         response = self.client.get(reverse('main:get_experiences_json'))
 

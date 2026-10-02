@@ -4,8 +4,7 @@ from django.contrib.auth.decorators import login_required
 from django.contrib.auth.forms import AuthenticationForm
 from django.contrib.auth.forms import UserCreationForm
 from django.core.exceptions import PermissionDenied
-from django.core import serializers
-from django.http import HttpResponse, JsonResponse
+from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
 from django.views.decorators.http import require_POST
@@ -83,16 +82,15 @@ def logout_user(request):
 
 
 def show_experience(request):
-    json_response = get_experiences_json(request)
-    experiences = serializers.deserialize(
-        'json',
-        json_response.content.decode('utf-8'),
-    )
+    experiences = Experience.objects.prefetch_related('starred_by').all()
+    title_query = request.GET.get('title', '').strip()
+    if title_query:
+        experiences = experiences.filter(title__icontains=title_query)
 
     context = {
         'name': 'Adinata Alaudin Pranaja',
         'short_name': 'Adinata',
-        'experience_list': [experience.object for experience in experiences],
+        'experience_list': experiences,
         'is_editor': is_editor(request.user),
     }
     return render(request, 'experience.html', context)
@@ -145,13 +143,42 @@ def edit_experience(request, experience_id):
 
 def get_experiences_json(request):
     title_query = request.GET.get('title', '').strip()
-    experiences = Experience.objects.all()
+    experiences = Experience.objects.prefetch_related('starred_by').all()
 
     if title_query:
         experiences = experiences.filter(title__icontains=title_query)
 
-    experiences_json = serializers.serialize('json', experiences)
-    return HttpResponse(experiences_json, content_type='application/json')
+    data = []
+    for experience in experiences:
+        starred_users = list(experience.starred_by.all())
+        data.append({
+            'pk': str(experience.pk),
+            'fields': {
+                'title': experience.title,
+                'description': experience.description,
+                'category': experience.category,
+                'category_display': experience.get_category_display(),
+                'thumbnail': experience.thumbnail,
+                'started_at': experience.started_at,
+                'ended_at': experience.ended_at,
+                'is_ongoing': experience.is_ongoing,
+                'star_count': len(starred_users),
+                'is_starred': request.user.is_authenticated and request.user in starred_users,
+                'starred_by_names': ', '.join(user.username for user in starred_users),
+            },
+        })
+    return JsonResponse(data, safe=False)
+
+
+@login_required(login_url='/login/')
+@require_POST
+def toggle_experience_star(request, experience_id):
+    experience = get_object_or_404(Experience, pk=experience_id)
+    if experience.starred_by.filter(pk=request.user.pk).exists():
+        experience.starred_by.remove(request.user)
+    else:
+        experience.starred_by.add(request.user)
+    return redirect('main:show_experience')
 
 
 @login_required(login_url='/login/')

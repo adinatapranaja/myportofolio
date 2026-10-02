@@ -27,6 +27,7 @@
                                 <p class="experience-status">Selesai</p>
                             {% endif %}
                             <div class="experience-actions">
+                                {% include "components/experience_star.html" %}
                                 {% if user.is_superuser or is_editor %}
                                     <a class="button button-small" href="{% url 'main:edit_experience' experience.id %}">Edit</a>
                                 {% endif %}
