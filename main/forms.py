@@ -48,6 +48,18 @@ class ProjectForm(forms.ModelForm):
 class ExperienceForm(forms.ModelForm):
     """Form untuk menambahkan atau memperbarui pengalaman."""
 
+    def clean_title(self):
+        title = strip_tags(self.cleaned_data['title']).strip()
+        if not title:
+            raise forms.ValidationError('Nama pengalaman tidak boleh hanya berisi tag HTML.')
+        return title
+
+    def clean_description(self):
+        description = strip_tags(self.cleaned_data['description']).strip()
+        if not description:
+            raise forms.ValidationError('Deskripsi pengalaman tidak boleh hanya berisi tag HTML.')
+        return description
+
     class Meta:
         model = Experience
         fields = ['title', 'description', 'category', 'thumbnail']

@@ -120,6 +120,49 @@ class MainTest(TestCase):
         response = client.post(url, data, HTTP_X_CSRFTOKEN=client.cookies['csrftoken'].value)
         self.assertEqual(response.status_code, 201)
 
+    def test_experience_forms_reject_html_only_text(self):
+        self.client.force_login(self.owner)
+        count = Experience.objects.count()
+        endpoints = [
+            ('main:create_experience_ajax', [], 400),
+            ('main:create_experience', [], 200),
+            ('main:edit_experience', [self.experience.pk], 200),
+        ]
+        for field in ('title', 'description'):
+            for endpoint, args, status in endpoints:
+                with self.subTest(field=field, endpoint=endpoint):
+                    data = {'title': 'Engineer', 'description': 'Build systems', 'category': 'internship'}
+                    data[field] = '<img src="x" onerror="alert(1)">'
+                    response = self.client.post(reverse(endpoint, args=args), data)
+                    self.assertEqual(response.status_code, status)
+                    errors = response.json()['errors'] if endpoint.endswith('_ajax') else response.context['form'].errors
+                    self.assertIn(field, errors)
+        self.assertEqual(Experience.objects.count(), count)
+        self.experience.refresh_from_db()
+        self.assertEqual(self.experience.title, 'Asisten Dosen PBP')
+        self.assertEqual(self.experience.description, 'Membangun aplikasi web yang aman dan responsif.')
+
+    def test_experience_forms_strip_html_before_saving(self):
+        self.client.force_login(self.owner)
+        data = {
+            'title': ' <b>Sanitized experience</b> ',
+            'description': ' <p>Build <em>systems</em><img src="x" onerror="alert(1)"></p> ',
+            'category': 'internship',
+        }
+        for endpoint, args, status in [
+            ('main:create_experience_ajax', [], 201),
+            ('main:create_experience', [], 302),
+            ('main:edit_experience', [self.experience.pk], 302),
+        ]:
+            with self.subTest(endpoint=endpoint):
+                response = self.client.post(reverse(endpoint, args=args), data)
+                self.assertEqual(response.status_code, status)
+        cleaned = Experience.objects.filter(title='Sanitized experience')
+        self.assertEqual(cleaned.count(), 3)
+        for experience in cleaned:
+            self.assertEqual(experience.description, 'Build systems')
+            self.assertEqual(experience.category, 'internship')
+
     def test_project_forms_reject_html_only_titles(self):
         self.client.force_login(self.owner)
         data = {
