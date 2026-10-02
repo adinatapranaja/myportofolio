@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% load static %}
 
 {% block meta %}
     <title>Experience - {{ name }}</title>
@@ -15,32 +16,42 @@
                         <a class="button" href="{% url 'main:create_experience' %}">Add experience</a>
                     {% endif %}
                 </div>
-                <div class="experience-list">
-                    {% for experience in experience_list %}
-                        <article class="experience-item">
-                            <p class="experience-label">{{ experience.get_category_display }}</p>
-                            <h2>{{ experience.title }}</h2>
-                            <p>{{ experience.description }}</p>
-                            {% if experience.is_ongoing %}
-                                <p class="experience-status">Sedang berlangsung</p>
-                            {% else %}
-                                <p class="experience-status">Selesai</p>
+                <form id="experience-search-form" class="project-search">
+                    <label class="visually-hidden" for="experience-title-search">Search experiences by title</label>
+                    <input id="experience-title-search" type="search" name="title" value="{{ title_query }}" placeholder="Search experiences by title">
+                    <button type="submit" class="button">Search</button>
+                </form>
+                <p id="experience-loading" class="empty-state" role="status">Memuat pengalaman...</p>
+                <p id="experience-error" class="empty-state hide" role="alert">Gagal memuat pengalaman. Silakan coba lagi dengan tombol Search.</p>
+                <p id="experience-empty" class="empty-state hide" role="status">Belum ada pengalaman yang ditambahkan.</p>
+                <div id="experience-grid" class="experience-list hide" data-endpoint="{% url 'main:get_experiences_json' %}"></div>
+                <noscript>Aktifkan JavaScript untuk menampilkan dan mencari pengalaman.</noscript>
+                <template id="experience-card-template">
+                    <article class="experience-item">
+                        <p class="experience-label" data-field="category_display"></p>
+                        <h2 data-field="title"></h2>
+                        <p data-field="description"></p>
+                        <p class="experience-status"></p>
+                        <div class="experience-actions">
+                            <form method="post" action="{% url 'main:toggle_experience_star' card_experience.id %}" class="star-form">
+                                {% csrf_token %}
+                                <button type="submit" class="button button-small button-star">
+                                    <span aria-hidden="true">★</span>
+                                    <span data-field="star-label">Star</span>
+                                    <span class="star-count"></span>
+                                </button>
+                            </form>
+                            {% if user.is_superuser or is_editor %}
+                                <a class="button button-small" href="{% url 'main:edit_experience' card_experience.id %}">Edit</a>
                             {% endif %}
-                            <div class="experience-actions">
-                                {% include "components/experience_star.html" %}
-                                {% if user.is_superuser or is_editor %}
-                                    <a class="button button-small" href="{% url 'main:edit_experience' experience.id %}">Edit</a>
-                                {% endif %}
-                                {% if user.is_superuser %}
-                                    {% include "components/experience_delete_modal.html" with experience=experience %}
-                                {% endif %}
-                            </div>
-                        </article>
-                    {% empty %}
-                        <p class="empty-state">Belum ada pengalaman yang ditambahkan.</p>
-                    {% endfor %}
-                </div>
+                            {% if user.is_superuser %}
+                                {% include "components/experience_delete_modal.html" with experience=card_experience %}
+                            {% endif %}
+                        </div>
+                    </article>
+                </template>
             </div>
         </section>
     </main>
+    <script src="{% static 'js/experience.js' %}" defer></script>
 {% endblock content %}

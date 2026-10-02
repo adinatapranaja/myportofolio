@@ -82,15 +82,11 @@ def logout_user(request):
 
 
 def show_experience(request):
-    experiences = Experience.objects.prefetch_related('starred_by').all()
-    title_query = request.GET.get('title', '').strip()
-    if title_query:
-        experiences = experiences.filter(title__icontains=title_query)
-
     context = {
         'name': 'Adinata Alaudin Pranaja',
         'short_name': 'Adinata',
-        'experience_list': experiences,
+        'title_query': request.GET.get('title', '').strip(),
+        'card_experience': {'id': '00000000-0000-0000-0000-000000000000', 'title': ''},
         'is_editor': is_editor(request.user),
     }
     return render(request, 'experience.html', context)

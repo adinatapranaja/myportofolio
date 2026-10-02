@@ -242,14 +242,35 @@ class MainTest(TestCase):
 
         self.assertEqual(response.status_code, 200)
         self.assertTemplateUsed(response, 'experience.html')
-        self.assertContains(response, self.experience.title)
-        self.assertContains(response, self.experience.description)
-        self.assertContains(response, 'Part-Time')
-        self.assertContains(response, 'Sedang berlangsung')
+        self.assertNotContains(response, self.experience.title)
+        self.assertContains(response, 'id="experience-grid"')
+        self.assertContains(response, 'js/experience.js')
+        self.assertNotIn('experience_list', response.context)
         self.assertContains(
             response,
             f'href="{reverse("main:show_main")}"',
         )
+
+    def test_experience_ajax_shell_respects_roles_and_initial_search(self):
+        user = User.objects.create_user(username='experience-shell-user')
+        editor = User.objects.create_user(username='experience-shell-editor')
+        editor.groups.add(self.editor_group)
+        placeholder = '00000000-0000-0000-0000-000000000000'
+        for account, can_edit, can_delete in [
+            (None, False, False), (user, False, False),
+            (editor, True, False), (self.owner, True, True),
+        ]:
+            with self.subTest(account=account):
+                self.client.logout()
+                if account:
+                    self.client.force_login(account)
+                response = self.client.get(reverse('main:show_experience'), {'title': 'Dosen'})
+                self.assertEqual(response.status_code, 200)
+                self.assertContains(response, 'value="Dosen"')
+                self.assertContains(response, reverse('main:get_experiences_json'))
+                self.assertContains(response, 'csrfmiddlewaretoken')
+                self.assertEqual(reverse('main:edit_experience', args=[placeholder]) in response.content.decode(), can_edit)
+                self.assertEqual(reverse('main:delete_experience', args=[placeholder]) in response.content.decode(), can_delete)
 
     def test_empty_experience_page(self):
         Experience.objects.all().delete()
@@ -263,7 +284,10 @@ class MainTest(TestCase):
         response = self.client.get(reverse('main:show_experience'))
 
         self.assertFalse(self.experience.is_ongoing)
-        self.assertContains(response, 'Selesai')
+        payload = self.client.get(reverse('main:get_experiences_json')).json()
+        fields = next(item['fields'] for item in payload if item['pk'] == str(self.experience.pk))
+        self.assertFalse(fields['is_ongoing'])
+        self.assertIsNotNone(fields['ended_at'])
 
     def test_projects_url_is_accessible(self):
         response = self.client.get(reverse('main:show_projects'))
