@@ -196,5 +196,46 @@ Hak akses aplikasi adalah sebagai berikut:
 
 Project memakai relasi `ManyToManyField` ke `User` agar satu pengguna hanya dapat memberi satu star pada Project yang sama. Endpoint `/api/projects/` tetap dapat diakses publik, tetapi relasi star diserialisasi dengan username, bukan ID internal user.
 
+### Tugas 5
+
+Implementasi tugas diterapkan pada **Experience** di `/experience/`. Halaman merender kerangka dan mengambil data melalui `/api/experiences/` menggunakan Fetch API. JSON disusun dengan `JsonResponse`, termasuk jumlah star, status star pengguna, kategori, dan status pengalaman. Pencarian judul menggunakan debounce 300 ms dan `AbortController`, dengan tampilan loading, kosong, serta error.
+
+Superuser dapat membuka modal Add experience dan mengirim form ke `/experience/add-ajax/` tanpa reload. Endpoint memvalidasi `ExperienceForm`, memeriksa hak akses, dan mengembalikan 201 saat berhasil, 400 untuk kesalahan validasi, atau 403 untuk pengguna tanpa izin. CSRF dikirim lewat `FormData` dan header `X-CSRFToken`. Form ditutup dan daftar diperbarui sesuai pencarian aktif setelah berhasil; saat gagal, input tetap tersedia dan toast menampilkan pesan kesalahan.
+
+Pengunjung dapat membaca data. Pengguna yang login dapat memberi atau membatalkan star; Editor dapat mengedit; superuser dapat menambah, mengedit, dan menghapus. Star, edit, dan hapus masih memakai alur request biasa. Operasi tambah AJAX mengembalikan JSON 403 kepada tamu, berbeda dari halaman tambah biasa yang mengarahkan tamu ke login.
+
+Teks kartu diisi dengan `textContent`. Judul dan deskripsi dibersihkan menggunakan `strip_tags` di `ExperienceForm`, dan nilai yang kosong setelah dibersihkan ditolak. Perlindungan ini berlaku pada tambah biasa, tambah AJAX, dan edit. `strip_tags` bukan pengganti render aman dan dapat memotong teks seperti `List<String>`; data lama tetap harus ditampilkan sebagai teks.
+
+#### Setup dan pemeriksaan
+
+Aktifkan environment sesuai instruksi di awal README, lalu jalankan:
+
+```bash
+python manage.py migrate
+python manage.py check
+python manage.py test main
+python manage.py runserver
+```
+
+Migrasi `0005_experience_starred_by` menambahkan relasi star Experience. Logika browser ada di `static/js/experience.js`, modal ada di `templates/components/experience_form_modal.html`, dan toast menggunakan komponen bersama dari Tutorial 5.
+
+Pengujian otomatis mencakup akses tiap peran, JSON dan filter, star, CSRF, validasi AJAX, serta payload XSS pada tambah dan edit. Pemeriksaan interaksi visual di browser belum selesai karena browser otomatis tidak tersedia. Untuk verifikasi manual:
+
+1. Buka `/experience/` sebagai tamu, user biasa, Editor, dan superuser; pastikan daftar tampil dan kontrol sesuai hak akses.
+2. Ketik judul pada pencarian dan amati request di Network setelah jeda 300 ms. Search/Enter harus langsung mencari; pencarian tanpa hasil menampilkan kondisi kosong.
+3. Sebagai superuser, tambahkan pengalaman lewat modal. Pastikan tidak ada reload, toast sukses muncul, dan data tampil jika sesuai pencarian aktif.
+4. Isi judul hanya dengan spasi atau `<img src="x" onerror="alert('XSS!')">`. Pastikan server menolak, input tetap tersedia, toast error muncul, dan tidak ada alert XSS.
+5. Simulasikan koneksi offline melalui DevTools lalu jalankan pencarian untuk memeriksa kondisi error. Aktifkan jaringan kembali dan ulangi pencarian.
+
+#### Jawaban reflektif
+
+1. **Debouncing** menunda pemanggilan fungsi sampai tidak ada input baru selama suatu interval. Pada pencarian Experience, setiap input membatalkan timer sebelumnya dan membuat timer 300 ms. Dengan begitu, browser tidak mengirim request untuk setiap huruf saat pengguna mengetik cepat. Ini mengurangi request dan beban server. Tombol Search/Enter membatalkan timer dan langsung mencari, sedangkan `AbortController` membatalkan request lama agar respons lama tidak menimpa pencarian terbaru.
+
+2. **`await` pada `fetch()`** menunggu Promise selesai sebelum melanjutkan fungsi async tersebut, tanpa memblokir seluruh antarmuka browser. Hasilnya adalah objek `Response`; `await response.json()` kemudian menunggu pembacaan dan parsing body JSON. Tanpa `await`, variabel hasil `fetch()` berisi Promise, sehingga tidak bisa langsung dipakai sebagai `Response`, misalnya dengan memanggil `.json()`. Alternatifnya adalah menggunakan `.then()`. Status HTTP 4xx/5xx tidak otomatis membuat `fetch()` reject, sehingga kode tetap harus memeriksa `response.ok`.
+
+3. **XSS (Cross-Site Scripting)** terjadi ketika data tidak tepercaya ditafsirkan sebagai kode yang dijalankan di browser. Template Django melakukan auto-escaping secara default, sedangkan string JSON yang dimasukkan ke `innerHTML` tidak mendapat perlindungan otomatis tersebut. AJAX sendiri bukan penyebab XSS; cara memasukkan data ke DOM yang menentukan risikonya. Pada Experience, teks dimasukkan lewat `textContent`, sehingga tag ditampilkan sebagai teks, dan input dibersihkan serta divalidasi di server. Validasi URL juga tetap diperlukan karena escaping HTML saja tidak menolak skema seperti `javascript:`.
+
+Sumber: [Individual Assignment 5 PBP](https://pbp.cs.ui.ac.id/assignments/individual/tugas-5.html), berdasarkan salinan HTML yang disimpan.
+
 ### AI Disclosure
 Dalam pengerjaan project ini, saya menggunakan bantuan AI secara terbatas, yaitu untuk membantu merapikan format penulisan pada file README.md agar lebih terstruktur dan mudah dibaca, serta untuk mencari referensi dan tutorial dalam mengembangkan desain web yang saya buat. Seluruh proses pengembangan, logika, dan implementasi tetap saya kerjakan dan pahami sendiri.
