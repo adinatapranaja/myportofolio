@@ -12,7 +12,7 @@ class IsPortfolioOwnerOrReadOnly(BasePermission):
 
 
 class IsPortfolioOwnerOrEditorOrReadOnly(BasePermission):
-    message = 'Only the portfolio owner or an editor can change this data.'
+    message = 'Editors can only update data; creating and deleting require the portfolio owner.'
 
     def has_permission(self, request, view):
         if request.method in SAFE_METHODS:
