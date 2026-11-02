@@ -4,9 +4,18 @@ from django.contrib.auth.models import Group, User
 from django.test import override_settings
 from django.urls import reverse
 from rest_framework import status
-from rest_framework.test import APIClient, APITestCase
+from rest_framework.decorators import api_view, permission_classes
+from rest_framework.response import Response
+from rest_framework.test import APIClient, APIRequestFactory, APITestCase, force_authenticate
 
 from main.models import Project
+from main.permissions import IsPortfolioOwnerOrEditorOrReadOnly
+
+
+@api_view(['GET', 'HEAD', 'OPTIONS', 'POST', 'PUT', 'PATCH', 'DELETE'])
+@permission_classes([IsPortfolioOwnerOrEditorOrReadOnly])
+def editor_protected_view(request):
+    return Response(status=status.HTTP_204_NO_CONTENT)
 
 
 @override_settings(ALLOWED_HOSTS=['testserver'])
@@ -140,3 +149,41 @@ class ProjectAPITest(APITestCase):
             self.list_url, self.payload, format='json', HTTP_X_CSRFTOKEN=token,
         )
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+
+
+class PortfolioEditorPermissionTest(APITestCase):
+    def setUp(self):
+        self.factory = APIRequestFactory()
+        editor_group = Group.objects.create(name='Editor')
+        self.owner = User.objects.create_superuser(username='owner', password='test-password')
+        self.visitor = User.objects.create_user(username='visitor', password='test-password')
+        self.editor = User.objects.create_user(username='editor', password='test-password')
+        self.editor.groups.add(editor_group)
+        self.staff = User.objects.create_user(username='staff', password='test-password', is_staff=True)
+
+    def status_for(self, user, method):
+        request = getattr(self.factory, method.lower())('/editor-protected/', {}, format='json')
+        if user is not None:
+            force_authenticate(request, user=user)
+        return editor_protected_view(request).status_code
+
+    def test_roles_follow_editor_permission_matrix(self):
+        allowed = status.HTTP_204_NO_CONTENT
+        denied = status.HTTP_403_FORBIDDEN
+        matrix = {
+            None: {'read': allowed, 'POST': denied, 'PUT': denied, 'PATCH': denied, 'DELETE': denied},
+            'visitor': {'read': allowed, 'POST': denied, 'PUT': denied, 'PATCH': denied, 'DELETE': denied},
+            'staff': {'read': allowed, 'POST': denied, 'PUT': denied, 'PATCH': denied, 'DELETE': denied},
+            'editor': {'read': allowed, 'POST': denied, 'PUT': allowed, 'PATCH': allowed, 'DELETE': denied},
+            'owner': {'read': allowed, 'POST': allowed, 'PUT': allowed, 'PATCH': allowed, 'DELETE': allowed},
+        }
+        for role, expected in matrix.items():
+            user = getattr(self, role) if role else None
+            for method in ('GET', 'HEAD', 'OPTIONS', 'POST', 'PUT', 'PATCH', 'DELETE'):
+                with self.subTest(role=role, method=method):
+                    want = expected['read'] if method in ('GET', 'HEAD', 'OPTIONS') else expected[method]
+                    self.assertEqual(self.status_for(user, method), want)
+
+    def test_editor_needs_the_exact_group_name(self):
+        self.visitor.groups.add(Group.objects.create(name='editor'))
+        self.assertEqual(self.status_for(self.visitor, 'PATCH'), status.HTTP_403_FORBIDDEN)
