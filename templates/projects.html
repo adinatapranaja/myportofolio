@@ -35,7 +35,13 @@
                 <p id="projects-loading" class="empty-state" role="status">Memuat projects...</p>
                 <p id="projects-error" class="empty-state hide" role="alert">Gagal memuat data projects. Silakan coba lagi dengan tombol Search.</p>
                 <p id="projects-empty" class="empty-state hide" role="status">Belum ada proyek yang ditambahkan.</p>
-                <div id="projects-grid" class="projects-grid hide" data-endpoint="{% url 'main:get_projects_json' %}"></div>
+                <div
+                    id="projects-grid"
+                    class="projects-grid hide"
+                    data-endpoint="{% url 'api:project-list' %}"
+                    data-detail-endpoint="{% url 'api:project-detail' card_project.id %}"
+                    data-star-endpoint="{% url 'api:project-star' card_project.id %}"
+                ></div>
                 <noscript>Aktifkan JavaScript untuk menampilkan dan mencari projects.</noscript>
                 <template id="project-card-template">
                     <article class="project-card">
@@ -45,14 +51,19 @@
                         <div class="project-links">
                             <a data-field="project_url">Live project</a>
                             <a data-field="repository_url">Repository</a>
-                            <form method="post" action="{% url 'main:toggle_star' card_project.id %}" class="star-form">
-                                {% csrf_token %}
-                                <button type="submit" class="button button-small button-star">
+                            {% if user.is_authenticated %}
+                                <button type="button" class="button button-small button-star" data-action="star" data-id="{{ card_project.id }}">
                                     <span aria-hidden="true">★</span>
                                     <span data-field="star-label">Star</span>
                                     <span class="star-count"></span>
                                 </button>
-                            </form>
+                            {% else %}
+                                <a class="button button-small button-secondary button-star" href="{% url 'main:login' %}">
+                                    <span aria-hidden="true">★</span>
+                                    Login to star
+                                    <span class="star-count"></span>
+                                </a>
+                            {% endif %}
                             {% if user.is_superuser or is_editor %}
                                 <a class="button button-small" href="{% url 'main:edit_project' card_project.id %}">Edit</a>
                             {% endif %}
@@ -68,5 +79,6 @@
     {% if user.is_superuser %}
         {% include "components/project_form_modal.html" %}
     {% endif %}
+    {% csrf_token %}
     <script src="{% static 'js/projects.js' %}" defer></script>
 {% endblock content %}

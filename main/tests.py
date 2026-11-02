@@ -389,9 +389,41 @@ class MainTest(TestCase):
 
         self.assertNotContains(response, self.project.title)
         self.assertContains(response, 'id="projects-grid"')
-        self.assertContains(response, reverse('main:get_projects_json'))
+        self.assertContains(response, f'data-endpoint="{reverse("api:project-list")}"')
+        self.assertNotContains(response, reverse('main:get_projects_json'))
         self.assertContains(response, 'js/projects.js')
         self.assertNotIn('project_list', response.context)
+
+    def test_projects_page_uses_drf_endpoints_for_each_role(self):
+        user = User.objects.create_user(username='projects-shell-user')
+        editor = User.objects.create_user(username='projects-shell-editor')
+        editor.groups.add(self.editor_group)
+        placeholder = '00000000-0000-0000-0000-000000000000'
+        for account, can_star, can_edit, can_manage in [
+            (None, False, False, False), (user, True, False, False),
+            (editor, True, True, False), (self.owner, True, True, True),
+        ]:
+            with self.subTest(account=account):
+                self.client.logout()
+                if account:
+                    self.client.force_login(account)
+                response = self.client.get(reverse('main:show_projects'))
+                html = response.content.decode()
+                self.assertContains(response, reverse('api:project-detail', args=[placeholder]))
+                self.assertContains(response, reverse('api:project-star', args=[placeholder]))
+                self.assertContains(response, 'csrfmiddlewaretoken')
+                self.assertIn('csrftoken', response.cookies)
+                self.assertEqual('data-action="star"' in html, can_star)
+                self.assertEqual('Login to star' in html, not can_star)
+                self.assertEqual(reverse('main:edit_project', args=[placeholder]) in html, can_edit)
+                self.assertEqual('data-action="delete"' in html, can_manage)
+                self.assertEqual('id="project-form"' in html, can_manage)
+                for legacy_url in [
+                    reverse('main:toggle_star', args=[placeholder]),
+                    reverse('main:delete_project', args=[placeholder]),
+                    reverse('main:create_project_ajax'),
+                ]:
+                    self.assertNotIn(f'"{legacy_url}"', html)
 
     def test_empty_projects_page(self):
         Project.objects.all().delete()
@@ -489,10 +521,7 @@ class MainTest(TestCase):
             reverse('main:edit_project', args=['00000000-0000-0000-0000-000000000000']),
         )
         self.assertNotContains(response, reverse('main:create_project'))
-        self.assertNotContains(
-            response,
-            reverse('main:delete_project', args=['00000000-0000-0000-0000-000000000000']),
-        )
+        self.assertNotContains(response, 'data-action="delete"')
 
     def test_create_experience_page_is_accessible(self):
         self.client.force_login(self.owner)

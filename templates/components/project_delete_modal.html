@@ -38,10 +38,7 @@
                 popovertarget="delete-project-{{ project.id }}"
                 popovertargetaction="hide"
             >Cancel</button>
-            <form method="post" action="{% url 'main:delete_project' project.id %}">
-                {% csrf_token %}
-                <button class="button button-danger" type="submit">Yes, delete</button>
-            </form>
+            <button type="button" class="button button-danger" data-action="delete" data-id="{{ project.id }}">Yes, delete</button>
         </div>
     </div>
 </div>

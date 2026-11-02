@@ -2,8 +2,20 @@ const projectGrid = document.getElementById('projects-grid');
 const searchForm = document.getElementById('project-search-form');
 const searchInput = document.getElementById('project-title-search');
 const SEARCH_DEBOUNCE_DELAY = 300;
+const PLACEHOLDER_ID = '00000000-0000-0000-0000-000000000000';
 let searchDebounceTimer;
 let projectsAbortController;
+
+function getCookie(name) {
+    const prefix = `${name}=`;
+    const cookie = document.cookie.split(';').map(value => value.trim())
+        .find(value => value.startsWith(prefix));
+    return cookie ? decodeURIComponent(cookie.slice(prefix.length)) : null;
+}
+
+function projectEndpoint(pattern, id) {
+    return pattern.replace(PLACEHOLDER_ID, id);
+}
 
 function displayProjectsState(state) {
     for (const name of ['loading', 'error', 'empty', 'grid']) {
@@ -12,15 +24,14 @@ function displayProjectsState(state) {
     projectGrid.setAttribute('aria-busy', String(state === 'loading'));
 }
 
-function buildProjectCardElement(item) {
+function buildProjectCardElement(project) {
     const card = document.getElementById('project-card-template').content.firstElementChild.cloneNode(true);
-    const project = item.fields;
     // Only the UUID is substituted in trusted template attributes; data stays text.
-    if (!/^[0-9a-f-]{36}$/i.test(item.pk)) throw new Error('Invalid project ID');
+    if (!/^[0-9a-f-]{36}$/i.test(project.id)) throw new Error('Invalid project ID');
     for (const element of card.querySelectorAll('*')) {
         for (const attribute of [...element.attributes]) {
-            if (attribute.value.includes('00000000-0000-0000-0000-000000000000')) {
-                element.setAttribute(attribute.name, attribute.value.replaceAll('00000000-0000-0000-0000-000000000000', item.pk));
+            if (attribute.value.includes(PLACEHOLDER_ID)) {
+                element.setAttribute(attribute.name, attribute.value.replaceAll(PLACEHOLDER_ID, project.id));
             }
         }
     }
@@ -40,7 +51,8 @@ function buildProjectCardElement(item) {
     const starButton = card.querySelector('.button-star');
     starButton.classList.toggle('is-starred', project.is_starred);
     starButton.title = project.star_count ? `Starred by ${project.starred_by_names}` : 'Be the first to star';
-    card.querySelector('[data-field="star-label"]').textContent = project.is_starred ? 'Unstar' : 'Star';
+    const starLabel = card.querySelector('[data-field="star-label"]');
+    if (starLabel) starLabel.textContent = project.is_starred ? 'Unstar' : 'Star';
     card.querySelector('.star-count').textContent = project.star_count;
     const deleteModal = card.querySelector('.project-delete-modal');
     if (deleteModal) {
@@ -76,6 +88,27 @@ async function fetchProjects(searchQuery = '') {
     }
 }
 
+function apiErrorMessage(data, status) {
+    const messages = Object.values(data).flat().filter(value => typeof value === 'string');
+    return messages.join(' ') || `Terjadi kesalahan (status ${status}).`;
+}
+
+async function writeProject(url, method, payload) {
+    const response = await fetch(url, {
+        method,
+        headers: {
+            Accept: 'application/json',
+            'Content-Type': 'application/json',
+            'X-CSRFToken': getCookie('csrftoken'),
+        },
+        body: payload === undefined ? undefined : JSON.stringify(payload),
+    });
+    if (response.status === 204) return null;
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok) throw new Error(apiErrorMessage(data, response.status));
+    return data;
+}
+
 function searchProjects() {
     fetchProjects(searchInput.value.trim());
 }
@@ -104,32 +137,45 @@ async function addProject(event) {
     if (submitButton.disabled) return;
     submitButton.disabled = true;
     try {
-        const response = await fetch(projectForm.dataset.ajaxUrl, {
-            method: 'POST',
-            headers: {'X-CSRFToken': projectForm.elements.csrfmiddlewaretoken.value},
-            body: new FormData(projectForm),
-        });
-        const result = await response.json().catch(() => ({}));
-        if (response.ok) {
-            projectForm.reset();
-            closeProjectModal();
-            showToast('Berhasil', 'Proyek baru berhasil ditambahkan!', 'success');
-            clearTimeout(searchDebounceTimer);
-            await fetchProjects(searchInput.value.trim());
-        } else {
-            const errors = result.errors
-                ? Object.values(result.errors).flat().map(error => error.message)
-                : [result.message || `Terjadi kesalahan (status ${response.status}).`];
-            showToast('Gagal menambahkan proyek', errors.join(' '), 'error');
-        }
+        const fields = new FormData(projectForm);
+        const payload = Object.fromEntries([
+            'title', 'description', 'technologies', 'project_url', 'repository_url',
+        ].map(name => [name, fields.get(name)]));
+        await writeProject(projectForm.dataset.ajaxUrl, 'POST', payload);
+        projectForm.reset();
+        closeProjectModal();
+        showToast('Berhasil', 'Proyek baru berhasil ditambahkan!', 'success');
+        clearTimeout(searchDebounceTimer);
+        await fetchProjects(searchInput.value.trim());
     } catch (error) {
         console.error('Error adding project:', error);
-        showToast('Gagal menambahkan proyek', 'Tidak dapat terhubung ke server. Silakan coba lagi.', 'error');
+        showToast('Gagal menambahkan proyek', error.message, 'error');
     } finally {
         submitButton.disabled = false;
     }
 }
 
 projectForm?.addEventListener('submit', addProject);
+
+projectGrid.addEventListener('click', async (event) => {
+    const button = event.target.closest('button[data-action]');
+    if (!button || button.disabled) return;
+    const action = button.dataset.action;
+    const isStar = action === 'star';
+    button.disabled = true;
+    try {
+        const pattern = isStar ? projectGrid.dataset.starEndpoint : projectGrid.dataset.detailEndpoint;
+        await writeProject(projectEndpoint(pattern, button.dataset.id), isStar ? 'POST' : 'DELETE');
+        button.closest('[popover]')?.hidePopover();
+        showToast('Berhasil', isStar ? 'Star diperbarui.' : 'Proyek berhasil dihapus.', 'success');
+        clearTimeout(searchDebounceTimer);
+        await fetchProjects(searchInput.value.trim());
+    } catch (error) {
+        console.error(`Error on project ${action}:`, error);
+        showToast(isStar ? 'Gagal memperbarui star' : 'Gagal menghapus proyek', error.message, 'error');
+    } finally {
+        button.disabled = false;
+    }
+});
 
 fetchProjects(searchInput.value.trim());
