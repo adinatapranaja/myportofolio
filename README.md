@@ -82,7 +82,49 @@ Data kartu diisi menggunakan `textContent`, bukan interpolasi ke `innerHTML`; ta
 
 Star dan hapus masih menggunakan POST biasa. Kontrol edit tetap tersedia bagi Editor dan superuser. Kode interaksi terdapat pada `static/js/projects.js`, sedangkan toast pada `static/js/toast.js`.
 
-Sumber: [Tutorial 5 PBP](https://pbp.cs.ui.ac.id/tutorial/tutorial-5.html), berdasarkan salinan HTML yang disimpan.
+Sumber: [Tutorial 5 PBP](https://pbp.cs.ui.ac.id/tutorial/tutorial-5.html)
+
+### Tutorial 7 — Implementasi Django REST Framework
+
+Tutorial 7 membangun ulang API Projects dengan Django REST Framework (DRF) 3.18. Model `Project` dan datanya tetap sama; yang berubah adalah cara data dikirim dan diterima.
+
+| Kebutuhan | Tutorial 5 (manual) | Tutorial 7 (DRF) |
+| --- | --- | --- |
+| Objek menjadi JSON | Dictionary dirakit dalam loop | `ProjectSerializer` |
+| Validasi input | `ProjectForm` | Method `validate_*` pada serializer |
+| Hak akses | `if` di dalam view | Permission class |
+| Method yang diizinkan | `@require_POST` | `@api_view([...])` |
+| Response | `JsonResponse` | `Response` (JSON atau Browsable API) |
+
+Kontrak API baru berada di bawah prefix `/api/v1/`:
+
+| Method | Endpoint | Tindakan | Siapa yang boleh |
+| --- | --- | --- | --- |
+| GET | `/api/v1/projects/?title=` | Daftar dan pencarian | Semua pengunjung |
+| POST | `/api/v1/projects/` | Tambah proyek | Superuser |
+| GET | `/api/v1/projects/<uuid>/` | Detail proyek | Semua pengunjung |
+| PUT / PATCH | `/api/v1/projects/<uuid>/` | Ubah proyek | Superuser |
+| DELETE | `/api/v1/projects/<uuid>/` | Hapus proyek (204) | Superuser |
+| POST | `/api/v1/projects/<uuid>/star/` | Beri/batalkan star | Pengguna login |
+
+Autentikasi memakai `SessionAuthentication`, sehingga login portofolio yang sudah ada tetap dipakai dan setiap request tulis wajib membawa token CSRF. `IsPortfolioOwnerOrReadOnly` mengizinkan baca untuk semua orang dan tulis hanya untuk `is_superuser` (bukan `is_staff`). Endpoint star memakai `IsAuthenticated`, dan akun pemberi star selalu diambil dari `request.user`. Field `star_count`, `is_starred`, dan `starred_by_names` dihitung server dan tidak dapat diisi klien.
+
+`ProjectSerializer` tidak menjalankan `ProjectForm`, sehingga pembersihan `strip_tags` dan penolakan judul kosong ditulis ulang pada serializer. `URLField` tetap menolak skema seperti `javascript:`.
+
+Halaman `/projects/` kini memuat, menambah, memberi star, dan menghapus data melalui API DRF tanpa reload. Kontrak data berubah dari `item.pk`/`item.fields.title` menjadi `item.id`/`item.title`, dan error validasi berbentuk `{"title": ["..."]}`. Fungsi `writeProject` di `static/js/projects.js` menangani JSON, header `X-CSRFToken`, dan response 204 secara konsisten. Kartu tetap diisi dengan `textContent` dan tautan tetap dibatasi ke HTTP/HTTPS. Tamu melihat tautan "Login to star", sedangkan modal konfirmasi hapus kini mengirim DELETE. Halaman edit HTML untuk Editor dan endpoint lama (`/api/projects/`, `/projects/add-ajax/`) tidak dihapus.
+
+`IsPortfolioOwnerOrEditorOrReadOnly` disiapkan untuk bagian pilihan tugas: Editor boleh PUT/PATCH, sedangkan POST dan DELETE tetap khusus superuser.
+
+Pengujian API berada di `main/tests_api.py`: 13 test dari tutorial untuk akses publik, pencarian, 404, permission tiap peran, validasi, PATCH/PUT/DELETE, star, field read-only, method salah, dan CSRF dengan session sungguhan, ditambah test matriks peran untuk permission Editor.
+
+```bash
+python manage.py test main.tests_api --verbosity 2
+python manage.py test main
+```
+
+Untuk mencoba API di browser, jalankan server lalu buka `/api/v1/projects/`. Login melalui `/login/` atau `/api-auth/login/`, dan tambahkan `?format=json` untuk melihat JSON mentah.
+
+Sumber: [Tutorial 7 PBP](https://pbp.cs.ui.ac.id/tutorial/tutorial-7.html)
 
 ## Struktur dan penjelasan file
 
@@ -98,13 +140,19 @@ myportofolio/
 │   └── experience.html
 ├── static/
 │   ├── css/style.css
-│   └── img/adinata.jpg
+│   ├── img/adinata.jpg
+│   └── js/projects.js
 ├── main/
 │   ├── migrations/0001_initial.py
 │   ├── migrations/0002_project.py
+│   ├── api_urls.py
+│   ├── api_views.py
 │   ├── forms.py
 │   ├── models.py
+│   ├── permissions.py
+│   ├── serializers.py
 │   ├── tests.py
+│   ├── tests_api.py
 │   ├── urls.py
 │   └── views.py
 └── portofolio/
@@ -118,11 +166,17 @@ myportofolio/
 | --- | --- |
 | `manage.py` | Entry point command Django, misalnya `migrate`, `check`, dan `runserver`. |
 | `portofolio/settings.py` | Konfigurasi aplikasi: environment variables, database SQLite/PostgreSQL, template, static files, WhiteNoise, `ALLOWED_HOSTS`, dan `CSRF_TRUSTED_ORIGINS` untuk PWS. |
-| `portofolio/urls.py` | Menghubungkan URL project ke `main.urls` dan menyediakan route `/admin/`. |
+| `portofolio/urls.py` | Menghubungkan URL project ke `main.urls`, API DRF di `/api/v1/`, login Browsable API di `/api-auth/`, dan route `/admin/`. |
 | `main/models.py` | Mendefinisikan model database `Experience` dan `Project`. |
 | `main/forms.py` | `ProjectForm` berbasis `ModelForm` untuk memvalidasi serta menyimpan Project dari halaman form. |
 | `main/views.py` | View halaman profil, pengalaman, Project, autentikasi, form, JSON API, star, dan pemeriksaan hak akses. |
 | `main/urls.py` | Mendefinisikan route halaman, autentikasi, pengelolaan portfolio, JSON API, dan star Project. |
+| `main/serializers.py` | `ProjectSerializer` untuk representasi JSON, validasi input API, dan field star hasil perhitungan. |
+| `main/permissions.py` | Permission DRF: tulis khusus superuser, serta varian yang mengizinkan Editor melakukan PUT/PATCH. |
+| `main/api_views.py` | API view DRF untuk daftar/tambah, detail/ubah/hapus, dan star Project. |
+| `main/api_urls.py` | Route API dengan namespace `api`, misalnya `api:project-list`. |
+| `main/tests_api.py` | Test API DRF untuk permission, validasi, star, method, dan CSRF. |
+| `static/js/projects.js` | Memuat, mencari, menambah, memberi star, dan menghapus Project melalui API DRF. |
 | `main/migrations/` | Riwayat perubahan struktur database untuk model `Experience` dan `Project`, termasuk data seed portfolio. |
 | `main/tests.py` | Unit test untuk route, model, form tambah, JSON API/filter, serta hapus Project. |
 | `templates/base.html` | Skeleton bersama yang memuat metadata, navbar, footer, dan blok konten halaman. |
