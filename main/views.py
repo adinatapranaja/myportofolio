@@ -88,6 +88,7 @@ def show_experience(request):
         'title_query': request.GET.get('title', '').strip(),
         'card_experience': {'id': '00000000-0000-0000-0000-000000000000', 'title': ''},
         'form': ExperienceForm() if request.user.is_superuser else None,
+        'edit_form': ExperienceForm(auto_id='edit_%s') if can_edit_portfolio(request.user) else None,
         'is_editor': is_editor(request.user),
     }
     return render(request, 'experience.html', context)

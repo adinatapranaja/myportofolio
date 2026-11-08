@@ -53,7 +53,7 @@
                                 </a>
                             {% endif %}
                             {% if user.is_superuser or is_editor %}
-                                <a class="button button-small" href="{% url 'main:edit_experience' card_experience.id %}">Edit</a>
+                                <button type="button" class="button button-small" data-action="edit" data-id="{{ card_experience.id }}">Edit</button>
                             {% endif %}
                             {% if user.is_superuser %}
                                 {% include "components/experience_delete_modal.html" with experience=card_experience %}
@@ -66,6 +66,9 @@
     </main>
     {% if user.is_superuser %}
         {% include "components/experience_form_modal.html" %}
+    {% endif %}
+    {% if edit_form %}
+        {% include "components/experience_edit_modal.html" %}
     {% endif %}
     {% csrf_token %}
     <script src="{% static 'js/experience.js' %}" defer></script>

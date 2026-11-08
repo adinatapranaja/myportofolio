@@ -364,9 +364,11 @@ class MainTest(TestCase):
                 self.assertIn('csrftoken', response.cookies)
                 self.assertEqual('data-action="star"' in html, can_star)
                 self.assertEqual('Login to star' in html, not can_star)
-                self.assertEqual(reverse('main:edit_experience', args=[placeholder]) in html, can_edit)
+                self.assertEqual('data-action="edit"' in html, can_edit)
+                self.assertEqual('id="experience-edit-form"' in html, can_edit)
                 self.assertEqual('data-action="delete"' in html, can_delete)
                 for legacy_url in [
+                    reverse('main:edit_experience', args=[placeholder]),
                     reverse('main:get_experiences_json'),
                     reverse('main:toggle_experience_star', args=[placeholder]),
                     reverse('main:delete_experience', args=[placeholder]),

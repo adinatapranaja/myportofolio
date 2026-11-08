@@ -152,10 +152,61 @@ async function addExperience(event) {
 
 experienceForm?.addEventListener('submit', addExperience);
 
+const EDITABLE_FIELDS = ['title', 'description', 'category', 'thumbnail'];
+const editModal = document.getElementById('edit-experience-modal');
+const editForm = document.getElementById('experience-edit-form');
+
+async function openEditModal(button) {
+    // Load the latest data so the form never edits a stale card.
+    const response = await fetch(experienceEndpoint(experienceGrid.dataset.detailEndpoint, button.dataset.id), {
+        headers: {Accept: 'application/json'},
+    });
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok) throw new Error(apiErrorMessage(data, response.status));
+    for (const name of EDITABLE_FIELDS) editForm.elements[name].value = data[name] ?? '';
+    editForm.dataset.id = data.id;
+    editModal.showPopover();
+    editForm.elements.title.focus();
+}
+
+async function editExperience(event) {
+    event.preventDefault();
+    const submitButton = editForm.querySelector('button[type="submit"]');
+    if (submitButton.disabled) return;
+    submitButton.disabled = true;
+    try {
+        const payload = Object.fromEntries(EDITABLE_FIELDS.map(name => [name, editForm.elements[name].value]));
+        const url = experienceEndpoint(experienceGrid.dataset.detailEndpoint, editForm.dataset.id);
+        await writeExperience(url, 'PATCH', payload);
+        editModal.hidePopover();
+        showToast('Berhasil', 'Pengalaman berhasil diperbarui.', 'success');
+        await refreshExperiences();
+    } catch (error) {
+        console.error('Error updating experience:', error);
+        showToast('Gagal memperbarui pengalaman', error.message, 'error');
+    } finally {
+        submitButton.disabled = false;
+    }
+}
+
+editForm?.addEventListener('submit', editExperience);
+
 experienceGrid.addEventListener('click', async (event) => {
     const button = event.target.closest('button[data-action]');
     if (!button || button.disabled) return;
     const action = button.dataset.action;
+    if (action === 'edit') {
+        button.disabled = true;
+        try {
+            await openEditModal(button);
+        } catch (error) {
+            console.error('Error loading experience:', error);
+            showToast('Gagal memuat pengalaman', error.message, 'error');
+        } finally {
+            button.disabled = false;
+        }
+        return;
+    }
     const isStar = action === 'star';
     button.disabled = true;
     try {
