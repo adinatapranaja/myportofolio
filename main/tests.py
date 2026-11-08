@@ -344,22 +344,35 @@ class MainTest(TestCase):
         editor = User.objects.create_user(username='experience-shell-editor')
         editor.groups.add(self.editor_group)
         placeholder = '00000000-0000-0000-0000-000000000000'
-        for account, can_edit, can_delete in [
-            (None, False, False), (user, False, False),
-            (editor, True, False), (self.owner, True, True),
+        for account, can_star, can_edit, can_delete in [
+            (None, False, False, False), (user, True, False, False),
+            (editor, True, True, False), (self.owner, True, True, True),
         ]:
             with self.subTest(account=account):
                 self.client.logout()
                 if account:
                     self.client.force_login(account)
                 response = self.client.get(reverse('main:show_experience'), {'title': 'Dosen'})
+                html = response.content.decode()
                 self.assertEqual(response.status_code, 200)
                 self.assertContains(response, 'value="Dosen"')
-                self.assertEqual('id="experience-form"' in response.content.decode(), can_delete)
-                self.assertContains(response, reverse('main:get_experiences_json'))
+                self.assertEqual('id="experience-form"' in html, can_delete)
+                self.assertContains(response, f'data-endpoint="{reverse("api:experience-list")}"')
+                self.assertContains(response, reverse('api:experience-detail', args=[placeholder]))
+                self.assertContains(response, reverse('api:experience-star', args=[placeholder]))
                 self.assertContains(response, 'csrfmiddlewaretoken')
-                self.assertEqual(reverse('main:edit_experience', args=[placeholder]) in response.content.decode(), can_edit)
-                self.assertEqual(reverse('main:delete_experience', args=[placeholder]) in response.content.decode(), can_delete)
+                self.assertIn('csrftoken', response.cookies)
+                self.assertEqual('data-action="star"' in html, can_star)
+                self.assertEqual('Login to star' in html, not can_star)
+                self.assertEqual(reverse('main:edit_experience', args=[placeholder]) in html, can_edit)
+                self.assertEqual('data-action="delete"' in html, can_delete)
+                for legacy_url in [
+                    reverse('main:get_experiences_json'),
+                    reverse('main:toggle_experience_star', args=[placeholder]),
+                    reverse('main:delete_experience', args=[placeholder]),
+                    reverse('main:create_experience_ajax'),
+                ]:
+                    self.assertNotIn(f'"{legacy_url}"', html)
 
     def test_empty_experience_page(self):
         Experience.objects.all().delete()

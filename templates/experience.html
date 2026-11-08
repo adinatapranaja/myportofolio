@@ -24,7 +24,13 @@
                 <p id="experience-loading" class="empty-state" role="status">Memuat pengalaman...</p>
                 <p id="experience-error" class="empty-state hide" role="alert">Gagal memuat pengalaman. Silakan coba lagi dengan tombol Search.</p>
                 <p id="experience-empty" class="empty-state hide" role="status">Belum ada pengalaman yang ditambahkan.</p>
-                <div id="experience-grid" class="experience-list hide" data-endpoint="{% url 'main:get_experiences_json' %}"></div>
+                <div
+                    id="experience-grid"
+                    class="experience-list hide"
+                    data-endpoint="{% url 'api:experience-list' %}"
+                    data-detail-endpoint="{% url 'api:experience-detail' card_experience.id %}"
+                    data-star-endpoint="{% url 'api:experience-star' card_experience.id %}"
+                ></div>
                 <noscript>Aktifkan JavaScript untuk menampilkan dan mencari pengalaman.</noscript>
                 <template id="experience-card-template">
                     <article class="experience-item">
@@ -33,14 +39,19 @@
                         <p data-field="description"></p>
                         <p class="experience-status"></p>
                         <div class="experience-actions">
-                            <form method="post" action="{% url 'main:toggle_experience_star' card_experience.id %}" class="star-form">
-                                {% csrf_token %}
-                                <button type="submit" class="button button-small button-star">
+                            {% if user.is_authenticated %}
+                                <button type="button" class="button button-small button-star" data-action="star" data-id="{{ card_experience.id }}">
                                     <span aria-hidden="true">★</span>
                                     <span data-field="star-label">Star</span>
                                     <span class="star-count"></span>
                                 </button>
-                            </form>
+                            {% else %}
+                                <a class="button button-small button-secondary button-star" href="{% url 'main:login' %}">
+                                    <span aria-hidden="true">★</span>
+                                    Login to star
+                                    <span class="star-count"></span>
+                                </a>
+                            {% endif %}
                             {% if user.is_superuser or is_editor %}
                                 <a class="button button-small" href="{% url 'main:edit_experience' card_experience.id %}">Edit</a>
                             {% endif %}
@@ -56,5 +67,6 @@
     {% if user.is_superuser %}
         {% include "components/experience_form_modal.html" %}
     {% endif %}
+    {% csrf_token %}
     <script src="{% static 'js/experience.js' %}" defer></script>
 {% endblock content %}
